@@ -4,11 +4,13 @@ import type { ResultEvent } from '../types'
 interface Props {
   result: ResultEvent
   refining: boolean
+  favorited: boolean
   onRefine: (instruction: string) => void
   onFeedback: (rating: 1 | -1) => void
+  onFavorite: () => void
 }
 
-export default function ResultCard({ result, refining, onRefine, onFeedback }: Props) {
+export default function ResultCard({ result, refining, favorited, onRefine, onFeedback, onFavorite }: Props) {
   const [copied, setCopied] = useState(false)
   const [instruction, setInstruction] = useState('')
   const [rating, setRating] = useState<1 | -1 | null>(null)
@@ -35,9 +37,18 @@ export default function ResultCard({ result, refining, onRefine, onFeedback }: P
           最终提示词
           {result.parent_id && <span className="mode-badge">基于上一条迭代</span>}
         </h2>
-        <button className={`copy-btn${copied ? ' ok' : ''}`} onClick={copy}>
-          {copied ? '✓ 已复制' : '复制'}
-        </button>
+        <div className="result-head-actions">
+          <button
+            className={`mini-btn${favorited ? ' fav' : ''}`}
+            onClick={onFavorite}
+            title={favorited ? '取消收藏' : '收藏这条提示词（可在历史页加标签备注）'}
+          >
+            {favorited ? '★ 已收藏' : '☆ 收藏'}
+          </button>
+          <button className={`copy-btn${copied ? ' ok' : ''}`} onClick={copy}>
+            {copied ? '✓ 已复制' : '复制'}
+          </button>
+        </div>
       </div>
       <div className="result-text">{result.prompt}</div>
       {result.warnings.length > 0 && (

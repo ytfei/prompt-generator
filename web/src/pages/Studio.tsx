@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
-import { createTemplate, getOptions, inspireTheme, streamGeneration, streamRefine, submitFeedback } from '../api/client'
+import { createTemplate, getOptions, inspireTheme, streamGeneration, streamRefine, submitFeedback, toggleFavorite } from '../api/client'
 import type { GenerateHandlers } from '../api/client'
 import ChipGroup from '../components/ChipGroup'
 import ResultCard from '../components/ResultCard'
@@ -20,6 +20,7 @@ export default function Studio() {
   const [themeOptions, setThemeOptions] = useState<string[] | null>(null)
   const [themesOpen, setThemesOpen] = useState(false)
   const [modelTier, setModelTier] = useState('default')
+  const [resultFavorite, setResultFavorite] = useState(false)
   const queryClient = useQueryClient()
 
   const { data: options, isLoading } = useQuery({ queryKey: ['options'], queryFn: getOptions })
@@ -37,8 +38,13 @@ export default function Studio() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['generations'] }),
   })
 
+  const resultFavMut = useMutation({
+    mutationFn: () => toggleFavorite(result!.id, !resultFavorite),
+    onSuccess: (d) => setResultFavorite(d.favorite),
+  })
+
   const inspireMut = useMutation({
-    mutationFn: () => inspireTheme(selections, modelTier),
+    mutationFn: () => inspireTheme(selections, modelTier, theme),
     onSuccess: (d) => {
       setThemeOptions(d.themes)
       setThemesOpen(true)
@@ -64,6 +70,7 @@ export default function Studio() {
     onWarn: () => {},
     onResult: (ev) => {
       setResult(ev)
+      setResultFavorite(false)
       setPhase('done')
     },
     onError: (msg) => {
@@ -165,7 +172,9 @@ export default function Studio() {
                   ? themesOpen
                     ? '🎲 收起灵感'
                     : `🎲 展开灵感 (${themeOptions.length})`
-                  : '🎲 随机灵感'}
+                  : theme.trim()
+                    ? '🎲 主题变体'
+                    : '🎲 随机灵感'}
             </button>
           </div>
           <textarea
@@ -185,7 +194,7 @@ export default function Studio() {
           {themeOptions && themesOpen && (
             <div className="inspire-list">
               <div className="inspire-tip">
-                基于当前配置的灵感候选，点击选用：
+                基于当前配置{theme.trim() && '与已填主题'}的灵感候选，点击选用：
                 <span>
                   <button
                     className="mini-btn"
@@ -251,8 +260,10 @@ export default function Studio() {
           <ResultCard
             result={result}
             refining={phase === 'refining'}
+            favorited={resultFavorite}
             onRefine={handleRefine}
             onFeedback={(rating) => feedbackMut.mutate({ id: result.id, rating })}
+            onFavorite={() => resultFavMut.mutate()}
           />
         )}
       </div>

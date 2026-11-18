@@ -21,7 +21,6 @@ export default function App() {
             <Link to="/history">历史记录</Link>
             <Link to="/templates">我的模板</Link>
           </nav>
-          <span className="tag">P1 · React + FastAPI + LangGraph</span>
           <p className="sub">选配置 → 写主题 → Agent 生成优化 → 复制到「即梦」生图。</p>
         </header>
         <Routes>

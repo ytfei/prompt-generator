@@ -139,5 +139,8 @@ async def test_options_exposes_models(client):
 
 def test_prompts_exist_for_all_llm_nodes():
     import app.agent.graph  # noqa: F401 确保图可导入
-    for name in ["parse_intent", "enrich_details", "refine", "refine_instruction"]:
+    for name in [
+        "parse_intent", "enrich_details", "refine", "refine_instruction",
+        "inspire_theme", "inspire_from_theme",
+    ]:
         assert load_prompt(name).strip()

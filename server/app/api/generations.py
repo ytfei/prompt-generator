@@ -9,7 +9,13 @@ from app.agent.graph import stream_generation
 from app.agent.refine import stream_refine
 from app.db.models import Feedback, Generation, new_id, now_iso
 from app.db.session import SessionLocal
-from app.schemas import FeedbackCreate, GenerationCreate, GenerationOut, RefineCreate
+from app.schemas import (
+    FeedbackCreate,
+    GenerationCreate,
+    GenerationOut,
+    GenerationUpdate,
+    RefineCreate,
+)
 
 router = APIRouter(prefix="/api/generations", tags=["generations"])
 
@@ -28,6 +34,8 @@ def to_out(row: Generation, rating: int | None = None) -> GenerationOut:
         favorite=bool(row.favorite),
         parent_id=row.parent_id,
         rating=rating,
+        tags=json.loads(row.tags or "[]"),
+        note=row.note or "",
     )
 
 
@@ -113,16 +121,23 @@ async def get_generation(gen_id: str):
 
 
 @router.patch("/{gen_id}")
-async def update_generation(gen_id: str, body: dict):
-    if "favorite" not in body:
-        raise HTTPException(status_code=422, detail="favorite required")
+async def update_generation(gen_id: str, body: GenerationUpdate):
+    """部分更新：收藏 / 标签 / 备注（只改动传入的字段）。"""
+    if body.favorite is None and body.tags is None and body.note is None:
+        raise HTTPException(status_code=422, detail="nothing to update")
     async with SessionLocal() as session:
         row = await session.get(Generation, gen_id)
         if not row:
             raise HTTPException(status_code=404, detail="generation not found")
-        row.favorite = int(bool(body["favorite"]))
+        if body.favorite is not None:
+            row.favorite = int(body.favorite)
+        if body.tags is not None:
+            row.tags = json.dumps(body.tags, ensure_ascii=False)
+        if body.note is not None:
+            row.note = body.note
         await session.commit()
-        return to_out(row)
+        ratings = await ratings_for([gen_id])
+        return to_out(row, ratings.get(gen_id))
 
 
 @router.delete("/{gen_id}")

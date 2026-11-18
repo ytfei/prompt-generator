@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
-import { deleteGeneration, listGenerations, submitFeedback, toggleFavorite } from '../api/client'
+import { deleteGeneration, listGenerations, submitFeedback, toggleFavorite, updateGeneration } from '../api/client'
 import type { GenerationItem } from '../types'
 
 function CopyButton({ text }: { text: string }) {
@@ -19,9 +19,56 @@ function CopyButton({ text }: { text: string }) {
   )
 }
 
+/** 行内标签/备注编辑器 */
+function TagNoteEditor({
+  item,
+  onDone,
+}: {
+  item: GenerationItem
+  onDone: () => void
+}) {
+  const qc = useQueryClient()
+  const [tagsText, setTagsText] = useState(item.tags.join('、'))
+  const [note, setNote] = useState(item.note)
+  const saveMut = useMutation({
+    mutationFn: () =>
+      updateGeneration(item.id, {
+        tags: tagsText.split(/[、,，\s]+/).map((t) => t.trim()).filter(Boolean),
+        note,
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['generations'] })
+      onDone()
+    },
+  })
+
+  return (
+    <div className="tagnote-editor">
+      <input
+        placeholder="标签（用顿号/逗号分隔，如：牛市、首图、备选）"
+        value={tagsText}
+        onChange={(e) => setTagsText(e.target.value)}
+      />
+      <textarea
+        placeholder="备注：出图效果如何、适合配什么文章…"
+        value={note}
+        onChange={(e) => setNote(e.target.value)}
+        rows={2}
+      />
+      <div className="tagnote-actions">
+        <button className="mini-btn" onClick={onDone}>取消</button>
+        <button className="mini-btn good" disabled={saveMut.isPending} onClick={() => saveMut.mutate()}>
+          {saveMut.isPending ? '保存中…' : '保存'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
 export default function History() {
   const qc = useQueryClient()
   const [onlyFav, setOnlyFav] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
   const { data: items, isLoading } = useQuery({
     queryKey: ['generations', onlyFav],
     queryFn: () => listGenerations(onlyFav ? { favorite: true } : undefined),
@@ -39,9 +86,6 @@ export default function History() {
     mutationFn: ({ id, rating }: { id: string; rating: 1 | -1 }) => submitFeedback(id, rating),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['generations'] }),
   })
-
-  const renderRating = (it: GenerationItem) =>
-    it.rating === 1 ? <span className="rating-badge good">👍</span> : it.rating === -1 ? <span className="rating-badge bad">👎</span> : null
 
   if (isLoading) return <div className="page-loading">加载历史中…</div>
 
@@ -66,16 +110,16 @@ export default function History() {
               </>
             )}
             {it.mode === 'refine' && <span className="mode-badge">迭代</span>}
-            {renderRating(it)}
+            {it.rating === 1 && <span className="rating-badge">👍</span>}
+            {it.rating === -1 && <span className="rating-badge">👎</span>}
             <span style={{ flex: 1 }} />
-            <button className="mini-btn" onClick={() => fbMut.mutate({ id: it.id, rating: 1 })}>
-              👍
-            </button>
-            <button className="mini-btn" onClick={() => fbMut.mutate({ id: it.id, rating: -1 })}>
-              👎
-            </button>
-            <button className="mini-btn" onClick={() => favMut.mutate({ id: it.id, favorite: !it.favorite })}>
+            <button className="mini-btn" onClick={() => fbMut.mutate({ id: it.id, rating: 1 })}>👍</button>
+            <button className="mini-btn" onClick={() => fbMut.mutate({ id: it.id, rating: -1 })}>👎</button>
+            <button className={`mini-btn${it.favorite ? ' fav' : ''}`} onClick={() => favMut.mutate({ id: it.id, favorite: !it.favorite })}>
               {it.favorite ? '★ 已收藏' : '☆ 收藏'}
+            </button>
+            <button className="mini-btn" onClick={() => setEditingId(editingId === it.id ? null : it.id)}>
+              ✎ 标签备注{it.tags.length ? `(${it.tags.length})` : ''}
             </button>
             <CopyButton text={it.final_prompt} />
             <button className="mini-btn danger" onClick={() => delMut.mutate(it.id)}>
@@ -83,6 +127,15 @@ export default function History() {
             </button>
           </div>
           <div className="result-text">{it.final_prompt}</div>
+          {(it.tags.length > 0 || it.note) && (
+            <div className="tagnote-display">
+              {it.tags.map((t) => (
+                <span key={t} className="tag-chip">#{t}</span>
+              ))}
+              {it.note && <span className="note-text">📝 {it.note}</span>}
+            </div>
+          )}
+          {editingId === it.id && <TagNoteEditor item={it} onDone={() => setEditingId(null)} />}
         </div>
       ))}
     </div>

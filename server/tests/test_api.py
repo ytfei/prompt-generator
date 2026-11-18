@@ -76,8 +76,17 @@ async def test_favorite_toggle_and_delete(client):
     patched = await client.patch(f"/api/generations/{gen_id}", json={"favorite": True})
     assert patched.json()["favorite"] is True
 
+    # 标签与备注：部分更新，不互相覆盖
+    tagged = await client.patch(
+        f"/api/generations/{gen_id}",
+        json={"tags": ["牛市", "首图"], "note": "出图效果好，配情绪启动文章"},
+    )
+    assert tagged.json()["tags"] == ["牛市", "首图"]
+    assert "情绪启动" in tagged.json()["note"]
+    assert tagged.json()["favorite"] is True  # favorite 未传，保持原值
+
     favs = await client.get("/api/generations", params={"favorite": True})
-    assert len(favs.json()) == 1
+    assert any(g["id"] == gen_id and g["tags"] == ["牛市", "首图"] for g in favs.json())
 
     deleted = await client.delete(f"/api/generations/{gen_id}")
     assert deleted.json()["ok"] is True

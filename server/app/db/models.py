@@ -31,6 +31,8 @@ class Generation(Base):
     mode: Mapped[str] = mapped_column(String, default="standard")
     favorite: Mapped[int] = mapped_column(Integer, default=0)
     parent_id: Mapped[str | None] = mapped_column(String, nullable=True)  # 迭代链上游
+    tags: Mapped[str] = mapped_column(String, default="[]")  # 收藏标签 JSON 数组
+    note: Mapped[str] = mapped_column(String, default="")  # 收藏备注
 
 
 class Feedback(Base):

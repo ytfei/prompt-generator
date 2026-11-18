@@ -53,6 +53,8 @@ export interface GenerationItem {
   favorite: boolean
   parent_id: string | null
   rating: number | null
+  tags: string[]
+  note: string
 }
 
 export interface TemplateInfo {

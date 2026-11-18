@@ -40,15 +40,20 @@ def _clean_lines(text: str) -> list[str]:
     return lines
 
 
-async def inspire_themes(selections: dict, tier: str = "default") -> list[str]:
+async def inspire_themes(selections: dict, tier: str = "default", theme: str = "") -> list[str]:
     chosen = {k: v for k, v in (selections or {}).items() if v}
+    selections_json = json.dumps(chosen, ensure_ascii=False)
     llm = get_chat_model(temperature=1.0, tier=tier)
     if llm is None:
         return random.sample(FALLBACK_THEMES, THEME_COUNT)
     try:
-        result = await llm.ainvoke(
-            load_prompt("inspire_theme", selections=json.dumps(chosen, ensure_ascii=False))
+        # 有主题 → 围绕用户主题做变体；无主题 → 按配置发散
+        prompt = (
+            load_prompt("inspire_from_theme", theme=theme.strip(), selections=selections_json)
+            if theme.strip()
+            else load_prompt("inspire_theme", selections=selections_json)
         )
+        result = await llm.ainvoke(prompt)
         themes = _clean_lines(result.content)[:THEME_COUNT]
         if not themes:
             return random.sample(FALLBACK_THEMES, THEME_COUNT)

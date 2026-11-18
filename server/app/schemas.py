@@ -16,11 +16,18 @@ class RefineCreate(BaseModel):
 class InspireCreate(BaseModel):
     selections: dict[str, object] = Field(default_factory=dict)
     model_tier: str = "default"
+    theme: str = ""  # 已填写时围绕主题生成变体，留空时按配置发散
 
 
 class FeedbackCreate(BaseModel):
     rating: int  # 1=出图好，-1=出图差
     comment: str = ""
+
+
+class GenerationUpdate(BaseModel):
+    favorite: bool | None = None
+    tags: list[str] | None = None
+    note: str | None = None
 
 
 class GenerationOut(BaseModel):
@@ -36,6 +43,8 @@ class GenerationOut(BaseModel):
     favorite: bool
     parent_id: str | None = None
     rating: int | None = None
+    tags: list[str] = Field(default_factory=list)
+    note: str = ""
 
 
 class TemplateCreate(BaseModel):

@@ -17,8 +17,13 @@ async def init_db() -> None:
         Path(db_path).parent.mkdir(parents=True, exist_ok=True)
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-        # 旧库兼容：generations 表补 parent_id 列（新库由 create_all 直接建出）
+        # 旧库兼容：generations 表补缺失列（新库由 create_all 直接建出）
         res = await conn.execute(text("PRAGMA table_info(generations)"))
         cols = {r[1] for r in res}
-        if "parent_id" not in cols:
-            await conn.execute(text("ALTER TABLE generations ADD COLUMN parent_id TEXT"))
+        for col, ddl in [
+            ("parent_id", "TEXT"),
+            ("tags", "TEXT DEFAULT '[]'"),
+            ("note", "TEXT DEFAULT ''"),
+        ]:
+            if col not in cols:
+                await conn.execute(text(f"ALTER TABLE generations ADD COLUMN {col} {ddl}"))

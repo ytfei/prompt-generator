@@ -24,9 +24,15 @@ export const listGenerations = (params?: { favorite?: boolean }) => {
 }
 
 export const toggleFavorite = (id: string, favorite: boolean) =>
+  updateGeneration(id, { favorite })
+
+export const updateGeneration = (
+  id: string,
+  patch: { favorite?: boolean; tags?: string[]; note?: string },
+) =>
   request<GenerationItem>(`/api/generations/${id}`, {
     method: 'PATCH',
-    body: JSON.stringify({ favorite }),
+    body: JSON.stringify(patch),
   })
 
 export const deleteGeneration = (id: string) =>
@@ -38,10 +44,10 @@ export const submitFeedback = (id: string, rating: 1 | -1) =>
     body: JSON.stringify({ rating }),
   })
 
-export const inspireTheme = (selections: Selections, modelTier: string = 'default') =>
+export const inspireTheme = (selections: Selections, modelTier: string = 'default', theme: string = '') =>
   request<{ themes: string[] }>('/api/inspire-theme', {
     method: 'POST',
-    body: JSON.stringify({ selections, model_tier: modelTier }),
+    body: JSON.stringify({ selections, model_tier: modelTier, theme }),
   })
 
 export const listTemplates = () => request<TemplateInfo[]>('/api/templates')

@@ -90,6 +90,18 @@ def test_prompt_loader_renders_variables():
     assert "${" not in rendered
 
 
+async def test_inspire_theme(client):
+    resp = await client.post(
+        "/api/inspire-theme",
+        json={"selections": {"style": "超现实主义", "mood": "忧郁孤独"}},
+    )
+    assert resp.status_code == 200
+    themes = resp.json()["themes"]
+    assert len(themes) == 4
+    assert all(t.strip() for t in themes)
+    assert len(set(themes)) == 4  # 候选之间不重复
+
+
 def test_prompts_exist_for_all_llm_nodes():
     import app.agent.graph  # noqa: F401 确保图可导入
     for name in ["parse_intent", "enrich_details", "refine", "refine_instruction"]:

@@ -15,7 +15,12 @@ async def test_options_shape(client):
     data = resp.json()
     assert len(data["groups"]) == 14
     assert "usage" in data["groups"]
-    assert len(data["presets"]) == 3
+    assert len(data["presets"]) == 13
+    # 财经行情首图预设带分类与主题提示语
+    fin = [p for p in data["presets"] if p.get("category") == "财经行情首图"]
+    assert len(fin) == 10
+    assert all(p.get("theme_hint") for p in fin)
+    assert all(p["selections"]["usage"] == "公众号首图" for p in fin)
 
 
 async def test_generation_sse_flow_and_persist(client):

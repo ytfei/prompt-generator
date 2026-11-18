@@ -38,6 +38,12 @@ export const submitFeedback = (id: string, rating: 1 | -1) =>
     body: JSON.stringify({ rating }),
   })
 
+export const inspireTheme = (selections: Selections) =>
+  request<{ themes: string[] }>('/api/inspire-theme', {
+    method: 'POST',
+    body: JSON.stringify({ selections }),
+  })
+
 export const listTemplates = () => request<TemplateInfo[]>('/api/templates')
 
 export const createTemplate = (name: string, selections: Selections) =>

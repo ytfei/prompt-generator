@@ -16,6 +16,9 @@ export interface OptionGroup {
 export interface Preset {
   key: string
   label: string
+  category?: string
+  /** 场景类预设自带的主题提示语，应用模板时填入主题描述 */
+  theme_hint?: string
   selections: Record<string, string | string[]>
 }
 

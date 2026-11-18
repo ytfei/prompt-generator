@@ -11,6 +11,10 @@ class RefineCreate(BaseModel):
     instruction: str = Field(min_length=1)
 
 
+class InspireCreate(BaseModel):
+    selections: dict[str, object] = Field(default_factory=dict)
+
+
 class FeedbackCreate(BaseModel):
     rating: int  # 1=出图好，-1=出图差
     comment: str = ""

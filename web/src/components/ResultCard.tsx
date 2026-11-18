@@ -30,12 +30,15 @@ export default function ResultCard({ result, refining, onRefine, onFeedback }: P
 
   return (
     <div className="card">
-      <h2>
-        最终提示词
-        {result.parent_id && (
-          <span className="mode-badge">基于上一条迭代</span>
-        )}
-      </h2>
+      <div className="result-head">
+        <h2>
+          最终提示词
+          {result.parent_id && <span className="mode-badge">基于上一条迭代</span>}
+        </h2>
+        <button className={`copy-btn${copied ? ' ok' : ''}`} onClick={copy}>
+          {copied ? '✓ 已复制' : '复制'}
+        </button>
+      </div>
       <div className="result-text">{result.prompt}</div>
       {result.warnings.length > 0 && (
         <div className="notes">
@@ -56,9 +59,6 @@ export default function ResultCard({ result, refining, onRefine, onFeedback }: P
         </div>
       )}
       <div className="copy-row">
-        <button className={`copy-btn${copied ? ' ok' : ''}`} onClick={copy}>
-          {copied ? '✓ 已复制' : '复制'}
-        </button>
         {result.suggested_ratio && (
           <span className="ratio-badge">建议画幅：{result.suggested_ratio}</span>
         )}

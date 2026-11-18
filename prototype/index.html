@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>提示词工坊 · 静态原型</title>
+<style>
+  :root {
+    --accent: #6366f1;
+    --accent-soft: #eef0ff;
+    --text: #1f2330;
+    --text-2: #6b7186;
+    --border: #e4e7f0;
+    --bg: #f5f6fa;
+    --card: #ffffff;
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.6;
+  }
+  header {
+    padding: 26px 32px 18px; max-width: 1280px; margin: 0 auto;
+    display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap;
+  }
+  header h1 { font-size: 22px; letter-spacing: .5px; }
+  header h1 em { font-style: normal; color: var(--accent); }
+  header .tag { font-size: 12px; color: var(--text-2); background: #eceef5; padding: 3px 10px; border-radius: 999px; }
+  header .sub { width: 100%; color: var(--text-2); font-size: 13px; }
+
+  .layout {
+    max-width: 1280px; margin: 0 auto; padding: 0 32px 48px;
+    display: grid; grid-template-columns: 1fr 400px; gap: 20px; align-items: start;
+  }
+  @media (max-width: 980px) { .layout { grid-template-columns: 1fr; } }
+
+  /* 预设 */
+  .presets { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; align-items: center; }
+  .presets .label { font-size: 13px; color: var(--text-2); }
+  .preset-btn {
+    border: 1px solid var(--border); background: var(--card); color: var(--text);
+    padding: 7px 14px; border-radius: 999px; cursor: pointer; font-size: 13px; transition: .15s;
+  }
+  .preset-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* 选项区 */
+  .groups { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 720px) { .groups { grid-template-columns: 1fr; } }
+  .group { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
+  .group h3 { font-size: 13px; font-weight: 600; margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
+  .group h3 .state { font-weight: 400; font-size: 12px; color: var(--text-2); }
+  .group h3 .state.on { color: var(--accent); }
+  .group .hint { font-size: 12px; color: var(--text-2); margin-bottom: 10px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip {
+    border: 1px solid var(--border); background: #fafbfe; color: var(--text);
+    padding: 5px 12px; border-radius: 999px; cursor: pointer; font-size: 12.5px; transition: .12s; user-select: none;
+  }
+  .chip:hover { border-color: var(--accent); color: var(--accent); }
+  .chip.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .neg-custom {
+    margin-top: 10px; width: 100%; border: 1px dashed var(--border); border-radius: 8px;
+    padding: 7px 10px; font-size: 12.5px; color: var(--text); outline: none;
+  }
+  .neg-custom:focus { border-color: var(--accent); }
+
+  /* 右栏 */
+  .panel { position: sticky; top: 20px; display: flex; flex-direction: column; gap: 14px; }
+  .panel .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; }
+  .panel h2 { font-size: 15px; margin-bottom: 10px; }
+  textarea#theme {
+    width: 100%; min-height: 96px; resize: vertical; border: 1px solid var(--border); border-radius: 10px;
+    padding: 10px 12px; font-size: 13.5px; font-family: inherit; color: var(--text); outline: none; line-height: 1.6;
+  }
+  textarea#theme:focus { border-color: var(--accent); }
+  .row { display: flex; gap: 10px; margin-top: 12px; }
+  button.primary {
+    flex: 1; background: var(--accent); color: #fff; border: none; border-radius: 10px;
+    padding: 11px 0; font-size: 14.5px; font-weight: 600; cursor: pointer; transition: .15s;
+  }
+  button.primary:hover { filter: brightness(1.08); }
+  button.primary:disabled { opacity: .55; cursor: not-allowed; }
+  button.ghost {
+    background: none; border: 1px solid var(--border); color: var(--text-2);
+    border-radius: 10px; padding: 11px 16px; cursor: pointer; font-size: 13px;
+  }
+  button.ghost:hover { color: var(--accent); border-color: var(--accent); }
+
+  /* 生成过程 */
+  .steps { list-style: none; font-size: 12.5px; color: var(--text-2); }
+  .steps li { padding: 3px 0; opacity: .35; transition: .2s; }
+  .steps li.active { opacity: 1; color: var(--accent); }
+  .steps li.done { opacity: 1; color: var(--text); }
+  .steps li .dot { display: inline-block; width: 14px; }
+  .steps li.active .dot::before { content: "◍"; }
+  .steps li.done .dot::before { content: "✓"; color: #22c07a; }
+
+  /* 结果 */
+  #resultWrap { display: none; }
+  .result-text {
+    background: #f8f9fd; border: 1px solid var(--border); border-radius: 10px;
+    padding: 12px 14px; font-size: 13px; line-height: 1.8; white-space: pre-wrap; word-break: break-all;
+  }
+  .notes { margin-top: 10px; font-size: 12px; color: var(--text-2); }
+  .notes .note-item { padding: 2px 0; }
+  .notes .note-item::before { content: "· "; color: var(--accent); font-weight: 700; }
+  .notes .note-warn { color: #d97706; }
+  .copy-row { display: flex; align-items: center; gap: 10px; margin-top: 12px; }
+  .copy-btn {
+    background: #22c07a; color: #fff; border: none; border-radius: 8px;
+    padding: 8px 18px; font-size: 13px; font-weight: 600; cursor: pointer;
+  }
+  .copy-btn.ok { background: #16a364; }
+  .ratio-badge { font-size: 12px; color: var(--text-2); }
+  footer { text-align: center; color: var(--text-2); font-size: 12px; padding: 0 0 30px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>提示词<em>工坊</em></h1>
+  <span class="tag">静态原型 P0</span>
+  <p class="sub">选配置 → 写主题 → Agent 生成优化 → 复制到「即梦」生图。所有配置仅保存在本地浏览器。</p>
+</header>
+
+<div class="layout">
+  <!-- 左侧：选项 -->
+  <div>
+    <div class="presets">
+      <span class="label">预设模板</span>
+      <button class="preset-btn" data-preset="tech">公众号 · 科技感封面</button>
+      <button class="preset-btn" data-preset="warm">公众号 · 治愈插画</button>
+      <button class="preset-btn" data-preset="photo">公众号 · 写实摄影配图</button>
+      <button class="preset-btn" id="resetBtn" style="margin-left:auto">↺ 重置全部</button>
+    </div>
+    <div class="groups" id="groups"></div>
+  </div>
+
+  <!-- 右侧：主题 + 生成 -->
+  <div class="panel">
+    <div class="card">
+      <h2>主题描述 <span style="font-size:12px;color:var(--text-2);font-weight:400">（可留空）</span></h2>
+      <textarea id="theme" placeholder="例如：一个年轻人在深夜的书房里写公众号文章，屏幕光映在脸上……"></textarea>
+      <div class="row">
+        <button class="primary" id="genBtn">✨ 生成提示词</button>
+      </div>
+      <ul class="steps" id="steps" style="display:none;margin-top:12px">
+        <li data-step="0"><span class="dot"></span> 解析主题意图</li>
+        <li data-step="1"><span class="dot"></span> 补全画面细节</li>
+        <li data-step="2"><span class="dot"></span> 检查并修正维度冲突</li>
+        <li data-step="3"><span class="dot"></span> 输出最终提示词</li>
+      </ul>
+    </div>
+
+    <div class="card" id="resultWrap">
+      <h2>最终提示词</h2>
+      <div class="result-text" id="resultText"></div>
+      <div class="notes" id="notes"></div>
+      <div class="copy-row">
+        <button class="copy-btn" id="copyBtn">复制</button>
+        <span class="ratio-badge" id="ratioBadge"></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>提示词工坊 v0.1 · 本原型为交互演示，生成逻辑为本地模拟，P1 将接入真实 LLM Agent</footer>
+
+<script>
+/* ============ 数据定义（与 PRD 5.1 维度表一致） ============ */
+const DATA = {
+  usage: { name: '🎯 用途场景', hint: '决定推荐的画幅比例', options: [
+    ['公众号首图', '适配公众号头图的横幅封面构图，视觉冲击力强', '2.35:1'],
+    ['公众号次图', '正文内嵌插图，构图完整独立', '1:1'],
+    ['文章配图', '正文宽幅插图，与文字内容呼应', '16:9'],
+    ['海报封面', '竖版海报构图，信息层次分明', '3:4'],
+    ['自由创作', '', ''],
+  ]},
+  ratio: { name: '📐 画幅比例', hint: '选用途后自动推荐，可手动修改', options: [
+    ['1:1', ''], ['4:3', ''], ['3:4', ''], ['16:9', ''],
+    ['9:16', ''], ['3:2', ''], ['2:3', ''], ['2.35:1', ''],
+  ]},
+  style: { name: '🎨 画面风格', hint: '决定整体视觉语言', options: [
+    ['写实摄影', '超写实摄影风格，画面逼真如专业单反拍摄'],
+    ['电影感', '电影级画面质感，戏剧化打光与叙事感构图'],
+    ['日系动漫', '日系动漫插画风格，线条干净色彩清新'],
+    ['国风水墨', '中国水墨画风，写意笔触与留白意境'],
+    ['新中式插画', '新中式国风插画，传统元素现代表达'],
+    ['扁平插画', '扁平化矢量插画，几何形状与简洁色块'],
+    ['手绘水彩', '水彩手绘风格，颜料晕染通透自然'],
+    ['3D渲染', 'C4D三维渲染风格，立体精致富有体积感'],
+    ['黏土风', '黏土定格动画质感，手工捏制可爱圆润'],
+    ['毛毡布艺', '羊毛毡布艺质感，毛茸茸温暖柔软'],
+    ['像素艺术', '复古像素艺术风格'],
+    ['赛博朋克', '赛博朋克风格，霓虹光与未来都市'],
+    ['蒸汽波', '蒸汽波美学，复古电子与迷幻色彩'],
+    ['极简主义', '极简主义风格，元素克制构图干净'],
+    ['超现实主义', '超现实主义风格，梦幻荒诞充满想象'],
+    ['油画', '古典油画风格，厚重笔触层次丰富'],
+    ['儿童绘本', '儿童绘本插画风格，温暖童趣'],
+    ['商业摄影', '高端商业摄影风格，产品级精致布光'],
+  ]},
+  genre: { name: '🏛 艺术流派参考', hint: '叠加在风格之上的美学参照', options: [
+    ['印象派', '印象派光影笔触，莫奈式笔意'],
+    ['浮世绘', '日本浮世绘版画风格'],
+    ['包豪斯', '包豪斯设计语言，几何与功能之美'],
+    ['孟菲斯', '孟菲斯设计风格，明快撞色与趣味图形'],
+    ['波普艺术', '波普艺术风格，高饱和复制感'],
+    ['敦煌壁画', '敦煌壁画风格，矿物色彩与飘逸线条'],
+    ['瑞士国际主义', '瑞士国际主义美学，网格与秩序感'],
+    ['新艺术运动', '新艺术运动风格，有机曲线与装饰纹样'],
+  ]},
+  mood: { name: '🌡 情绪氛围', hint: '画面的情绪温度', options: [
+    ['治愈温暖', '氛围治愈温暖，令人安心'],
+    ['宁静平和', '宁静平和，安静舒缓'],
+    ['欢快活力', '欢快有活力，充满生机'],
+    ['浪漫梦幻', '浪漫梦幻，柔和唯美'],
+    ['忧郁孤独', '情绪忧郁孤独，安静中带一丝落寞'],
+    ['神秘悬疑', '神秘悬疑，引人探究'],
+    ['紧张压迫', '紧张有压迫感，张力十足'],
+    ['史诗恢弘', '史诗般恢弘大气'],
+    ['科幻冷感', '冷静克制的科技未来感'],
+    ['怀旧复古', '怀旧复古，带年代记忆感'],
+    ['幽默趣味', '幽默诙谐，轻松有趣'],
+  ]},
+  light: { name: '💡 光线', hint: '对出图质感影响极大', options: [
+    ['黄金时刻', '清晨或黄昏黄金时刻的光线，柔和金黄'],
+    ['蓝调时刻', '蓝调时刻的清冷天光'],
+    ['自然柔光', '自然柔光，明亮通透'],
+    ['逆光剪影', '逆光剪影，轮廓发光'],
+    ['伦勃朗光', '伦勃朗式侧光，立体而富有戏剧性'],
+    ['影棚布光', '影棚专业布光，主体突出背景干净'],
+    ['霓虹灯光', '霓虹灯光晕染，色彩迷离'],
+    ['烛光暖光', '烛光暖光，昏黄温馨'],
+    ['月光清辉', '清冷月光静静洒落'],
+    ['体积光', '体积光丁达尔效应，光束穿透感'],
+    ['正午硬光', '正午硬光，阴影锐利对比强烈'],
+  ]},
+  tone: { name: '🌈 色调配色', hint: '', options: [
+    ['自然真实', '色调自然真实，还原肉眼观感'],
+    ['暖调', '整体暖色调，橙黄为主'],
+    ['冷调', '整体冷色调，蓝青为主'],
+    ['高饱和', '高饱和浓郁色彩，视觉冲击力强'],
+    ['低饱和莫兰迪', '低饱和莫兰迪色系，高级柔和'],
+    ['黑白单色', '黑白单色，质感纯粹'],
+    ['胶片复古', '复古胶片色调，颗粒与暖调褪色感'],
+    ['霓虹撞色', '霓虹撞色，互补色强烈碰撞'],
+    ['同色系渐变', '同色系渐变过渡，和谐统一'],
+  ]},
+  comp: { name: '🖼 构图', hint: '', options: [
+    ['居中构图', '主体居中构图，稳定聚焦'],
+    ['三分法', '三分法构图，主体置于黄金分割点'],
+    ['对称构图', '对称构图，秩序感强'],
+    ['引导线', '引导线构图，视线汇聚向主体'],
+    ['框架式', '框架式构图，前景包裹主体'],
+    ['大面积留白', '大面积留白，主体精炼突出'],
+    ['对角线', '对角线构图，动感十足'],
+    ['重复图案', '重复图案构图，富有韵律感'],
+  ]},
+  shot: { name: '🔎 景别与视角', hint: '', options: [
+    ['微距', '微距视角，细节纤毫毕现'],
+    ['特写', '特写镜头，主体充满画面'],
+    ['近景', '近景景别'],
+    ['中景', '中景景别'],
+    ['全景', '全景画面'],
+    ['远景大场面', '远景大场面，气势开阔'],
+    ['俯视', '俯视角度拍摄'],
+    ['鸟瞰', '高空鸟瞰视角'],
+    ['仰视', '仰视角度，主体显得高大'],
+    ['平视', '平视视角，自然亲切'],
+    ['第一人称', '第一人称主观视角'],
+  ]},
+  bg: { name: '🏞 背景环境', hint: '', options: [
+    ['纯色背景', '纯色简约背景'],
+    ['渐变背景', '柔和渐变背景'],
+    ['虚化光斑', '背景虚化，焦外光斑柔和'],
+    ['室内场景', '室内场景，富有生活气息'],
+    ['自然户外', '自然户外环境，山川草木'],
+    ['城市街景', '城市街景，人间烟火气'],
+    ['抽象几何', '抽象几何背景，现代感强'],
+    ['桌面工作台', '整洁的桌面工作台场景'],
+    ['星空宇宙', '星空宇宙背景，深邃浩瀚'],
+    ['水下世界', '水下世界，光影摇曳'],
+  ]},
+  texture: { name: '🧵 质感材质', hint: '', options: [
+    ['哑光', '哑光质感，细腻不反光'],
+    ['光泽', '光泽质感，反光通透'],
+    ['金属', '金属质感，冷峻坚硬'],
+    ['玻璃', '玻璃质感，晶莹剔透'],
+    ['木质', '木质纹理，温润自然'],
+    ['织物', '织物纹理，柔软亲肤'],
+    ['纸张', '纸张肌理，手作温度感'],
+    ['胶片颗粒', '胶片颗粒质感'],
+    ['平滑数字', '平滑数字质感，干净利落'],
+  ]},
+  text: { name: '✏️ 文字与留白', hint: '公众号配图常需预留标题位', options: [
+    ['无文字要求', ''],
+    ['留白放标题', '画面预留干净的留白区域，方便后期叠加标题文字'],
+    ['含标题文字', '画面中包含清晰的标题文字，字体设计精致、无乱码'],
+    ['少量点缀文字', '画面中含少量点缀性文字元素'],
+  ]},
+  creative: { name: '🎲 创意自由度', hint: '控制 Agent 的发挥程度', options: [
+    ['严格遵循', '严格按照描述执行，不做过多发挥'],
+    ['平衡', '在描述基础上适度补充细节'],
+    ['充分发挥', '充分发挥想象力，大胆补充创意细节'],
+  ]},
+  negative: { name: '🚫 排除内容', hint: '可多选', multi: true, options: [
+    ['文字乱码', '画面中不出现乱码文字'],
+    ['水印', '无水印、无logo'],
+    ['低质量', '无模糊、无噪点、无低质量细节'],
+    ['肢体畸形', '人物肢体结构正常自然'],
+    ['过度复杂', '画面不过度杂乱，主体清晰'],
+  ]},
+};
+
+const PRESETS = {
+  tech:  { label: '公众号 · 科技感封面', sel: { usage:'公众号首图', ratio:'2.35:1', style:'3D渲染', mood:'科幻冷感', light:'体积光', tone:'霓虹撞色', comp:'居中构图', bg:'抽象几何', texture:'光泽', text:'留白放标题', creative:'充分发挥', negative:['水印','低质量'] } },
+  warm:  { label: '公众号 · 治愈插画',   sel: { usage:'文章配图', ratio:'16:9', style:'手绘水彩', mood:'治愈温暖', light:'黄金时刻', tone:'暖调', comp:'大面积留白', shot:'中景', bg:'自然户外', texture:'纸张', text:'留白放标题', creative:'平衡', negative:['文字乱码','水印','低质量'] } },
+  photo: { label: '公众号 · 写实摄影配图', sel: { usage:'公众号次图', ratio:'1:1', style:'写实摄影', mood:'怀旧复古', light:'自然柔光', tone:'胶片复古', comp:'三分法', shot:'中景', bg:'虚化光斑', texture:'胶片颗粒', text:'无文字要求', creative:'平衡', negative:['水印','低质量','肢体畸形'] } },
+};
+
+/* ============ 状态与渲染 ============ */
+let sel = {};            // { groupId: optionLabel 或 [labels] }
+const saved = localStorage.getItem('pg-proto-v1');
+if (saved) { try { sel = JSON.parse(saved); } catch(e) {} }
+
+function save() { localStorage.setItem('pg-proto-v1', JSON.stringify(sel)); }
+function getSel(gid) { return sel[gid] || (DATA[gid].multi ? [] : null); }
+
+const groupsEl = document.getElementById('groups');
+Object.entries(DATA).forEach(([gid, g]) => {
+  const card = document.createElement('div');
+  card.className = 'group';
+  const cur = getSel(gid);
+  const stateTxt = DATA[gid].multi
+    ? (cur.length ? `已选 ${cur.length}` : '不限定')
+    : (cur || '不限定');
+  card.innerHTML = `<h3>${g.name} <span class="state" id="state-${gid}">${stateTxt}</span></h3>
+                    ${g.hint ? `<div class="hint">${g.hint}</div>` : ''}`;
+  const chips = document.createElement('div');
+  chips.className = 'chips';
+  g.options.forEach(([label]) => {
+    const chip = document.createElement('span');
+    chip.className = 'chip' + (cur && (DATA[gid].multi ? cur.includes(label) : cur === label) ? ' on' : '');
+    chip.textContent = label;
+    chip.onclick = () => {
+      if (DATA[gid].multi) {
+        const arr = getSel(gid);
+        const i = arr.indexOf(label);
+        i >= 0 ? arr.splice(i, 1) : arr.push(label);
+        sel[gid] = arr;
+        chip.classList.toggle('on');
+      } else {
+        if (getSel(gid) === label) { delete sel[gid]; chip.classList.remove('on'); }
+        else {
+          sel[gid] = label;
+          chips.querySelectorAll('.chip').forEach(c => c.classList.remove('on'));
+          chip.classList.add('on');
+          if (gid === 'usage') autoRatio(label);   // 用途 → 推荐画幅
+        }
+      }
+      updateState(gid); save();
+    };
+    chips.appendChild(chip);
+  });
+  card.appendChild(chips);
+  if (gid === 'negative') {
+    const input = document.createElement('input');
+    input.className = 'neg-custom';
+    input.placeholder = '自定义排除项，回车添加…';
+    input.onkeydown = e => {
+      if (e.key === 'Enter' && input.value.trim()) {
+        const v = input.value.trim();
+        if (!sel.negative.includes(v)) sel.negative.push(v);
+        input.value = ''; save(); renderCustomNeg(v);
+      }
+    };
+    card.appendChild(input);
+    card._negInput = input;
+  }
+  groupsEl.appendChild(card);
+});
+// 恢复自定义排除项的 chip
+(getSel('negative') || []).forEach(v => {
+  if (!DATA.negative.options.some(o => o[0] === v)) renderCustomNeg(v);
+});
+
+function renderCustomNeg(v) {
+  const chips = document.querySelector('#groups .group:last-child .chips');
+  const chip = document.createElement('span');
+  chip.className = 'chip on'; chip.textContent = v;
+  chip.onclick = () => {
+    sel.negative = sel.negative.filter(x => x !== v);
+    chip.remove(); updateState('negative'); save();
+  };
+  chips.appendChild(chip);
+}
+
+function updateState(gid) {
+  const el = document.getElementById('state-' + gid);
+  const cur = getSel(gid);
+  const txt = DATA[gid].multi ? (cur.length ? `已选 ${cur.length}` : '不限定') : (cur || '不限定');
+  el.textContent = txt;
+  el.classList.toggle('on', !!(DATA[gid].multi ? cur.length : cur));
+}
+Object.keys(DATA).forEach(updateState);
+
+function autoRatio(usage) {
+  const opt = DATA.usage.options.find(o => o[0] === usage);
+  const r = opt && opt[2];
+  if (!r) return;
+  sel.ratio = r;
+  // 更新 ratio 组的 chip 状态
+  const groups = document.querySelectorAll('.group');
+  const ratioCard = [...groups].find(c => c.querySelector('h3') && c.querySelector('h3').textContent.includes('画幅比例'));
+  if (ratioCard) {
+    ratioCard.querySelectorAll('.chip').forEach(c => c.classList.toggle('on', c.textContent === r));
+    updateState('ratio');
+  }
+}
+
+/* ============ 预设与重置 ============ */
+document.querySelectorAll('.preset-btn[data-preset]').forEach(btn => {
+  btn.onclick = () => {
+    const p = PRESETS[btn.dataset.preset];
+    sel = JSON.parse(JSON.stringify(p.sel));
+    save(); location.reload();
+    setTimeout(() => { try { localStorage.setItem('pg-last-preset', p.label); } catch(e){} }, 0);
+  };
+});
+document.getElementById('resetBtn').onclick = () => { sel = {}; save(); location.reload(); };
+
+/* ============ 提示词组装 + 模拟 Agent ============ */
+const themeEl = document.getElementById('theme');
+const genBtn = document.getElementById('genBtn');
+const stepsEl = document.getElementById('steps');
+const resultWrap = document.getElementById('resultWrap');
+const resultText = document.getElementById('resultText');
+const notesEl = document.getElementById('notes');
+const copyBtn = document.getElementById('copyBtn');
+const ratioBadge = document.getElementById('ratioBadge');
+
+const phrase = gid => {
+  const cur = getSel(gid);
+  if (!cur) return '';
+  const opt = DATA[gid].options.find(o => o[0] === cur);
+  return opt ? opt[1] : '';
+};
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+function build() {
+  const notes = [], warns = [];
+  const theme = themeEl.value.trim();
+
+  // ── 冲突检查与修正 ──
+  let tone = phrase('tone'), toneLabel = getSel('tone');
+  const mood = getSel('mood');
+  if (mood && ['忧郁孤独','宁静平和'].includes(mood) && toneLabel && ['高饱和','霓虹撞色'].includes(toneLabel)) {
+    tone = '低饱和柔和色彩，克制而统一';
+    notes.push(`检测到「${mood}」与「${toneLabel}」存在情绪冲突，已调整为低饱和柔和表述`);
+  }
+  const usage = getSel('usage'), ratio = getSel('ratio');
+  const usageRatio = usage ? (DATA.usage.options.find(o => o[0] === usage) || [])[2] : '';
+  if (usage && ratio && usageRatio && ratio !== usageRatio) {
+    warns.push(`所选画幅 ${ratio} 与用途「${usage}」推荐画幅 ${usageRatio} 不一致，建议在即梦中以 ${usageRatio} 出图`);
+  }
+
+  // ── 组装 ──
+  const parts = [];
+  const style = phrase('style'), genre = phrase('genre');
+  if (style) parts.push(style);
+  if (genre) parts.push(genre);
+  if (theme) {
+    parts.push(`画面主体：${theme}`);
+  } else {
+    parts.push('一幅氛围感画面，主体自然融入环境');
+    warns.push('主题描述为空：已生成氛围型提示词，补充主题可获得更精准的结果');
+  }
+  const bg = phrase('bg');    if (bg) parts.push(`背景为${bg}`);
+  const light = phrase('light'); if (light) parts.push(light);
+  if (tone) parts.push(tone);
+  const comp = phrase('comp');  if (comp) parts.push(comp);
+  const shot = phrase('shot');  if (shot) parts.push(shot);
+  const moodP = phrase('mood'); if (moodP) parts.push(`整体${moodP}`);
+  const tex = phrase('texture'); if (tex) parts.push(`呈现${tex}`);
+  const txt = phrase('text');   if (txt) parts.push(txt);
+
+  const creative = getSel('creative');
+  if (creative === '严格遵循') parts.push('严格依据上述描述呈现，不做额外发挥');
+  else if (creative === '充分发挥') parts.push('在保持主题的前提下，大胆补充富有想象力的细节');
+
+  parts.push('超高细节，画质精致');
+  if (ratio) parts.push(`画幅比例 ${ratio}`);
+  else if (usageRatio) parts.push(`画幅比例 ${usageRatio}`);
+
+  let prompt = parts.filter(Boolean).join('，') + '。';
+  const negs = getSel('negative');
+  if (negs && negs.length) {
+    const negPhrases = negs.map(v => {
+      const o = DATA.negative.options.find(x => x[0] === v);
+      return o ? o[1] : `不出现${v}`;
+    });
+    prompt += ' 避免出现：' + negPhrases.join('，') + '。';
+  }
+
+  if (creative === '充分发挥' && theme) notes.push('已按「充分发挥」自由度，在主题基础上预留了创意补全空间（真实 Agent 将自动扩写细节）');
+  if (usage && ratio && ratio === usageRatio) notes.push(`画幅 ${ratio} 已与用途「${usage}」对齐`);
+
+  return { prompt, notes, warns, ratio: ratio || usageRatio || '' };
+}
+
+let generating = false;
+genBtn.onclick = async () => {
+  if (generating) return;
+  generating = true; genBtn.disabled = true;
+  resultWrap.style.display = 'none';
+  stepsEl.style.display = 'block';
+  const items = stepsEl.querySelectorAll('li');
+  items.forEach(li => li.className = '');
+
+  for (let i = 0; i < items.length; i++) {
+    items[i].className = 'active';
+    await sleep(i === 2 ? 650 : 480);   // 冲突检查一步稍长，体现"迭代修复"
+    items[i].className = 'done';
+  }
+
+  const { prompt, notes, warns, ratio } = build();
+  resultText.textContent = prompt;
+  ratioBadge.textContent = ratio ? `建议画幅：${ratio}` : '';
+  notesEl.innerHTML =
+    warns.map(w => `<div class="note-item note-warn">⚠ ${w}</div>`).join('') +
+    notes.map(n => `<div class="note-item">${n}</div>`).join('');
+  resultWrap.style.display = 'block';
+  stepsEl.style.display = 'none';
+  genBtn.disabled = false; generating = false;
+  resultWrap.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+};
+
+copyBtn.onclick = async () => {
+  try {
+    await navigator.clipboard.writeText(resultText.textContent);
+    copyBtn.textContent = '✓ 已复制'; copyBtn.classList.add('ok');
+    setTimeout(() => { copyBtn.textContent = '复制'; copyBtn.classList.remove('ok'); }, 1600);
+  } catch (e) {
+    const ta = document.createElement('textarea');
+    ta.value = resultText.textContent; document.body.appendChild(ta);
+    ta.select(); document.execCommand('copy'); ta.remove();
+    copyBtn.textContent = '✓ 已复制';
+    setTimeout(() => { copyBtn.textContent = '复制'; }, 1600);
+  }
+};
+</script>
+</body>
+</html>

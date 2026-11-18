@@ -1,0 +1,18 @@
+# 依赖与构建产物
+node_modules/
+web/dist/
+server/.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+
+# 环境与数据
+server/.env
+server/data/
+*.db
+
+# 编辑器
+.DS_Store
+.idea/
+.vscode/

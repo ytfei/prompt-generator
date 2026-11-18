@@ -102,6 +102,41 @@ async def test_inspire_theme(client):
     assert len(set(themes)) == 4  # 候选之间不重复
 
 
+async def test_inspire_with_tier(client):
+    resp = await client.post(
+        "/api/inspire-theme",
+        json={"selections": {}, "model_tier": "nano"},  # 未配置 nano → 回落默认
+    )
+    assert resp.status_code == 200
+    assert len(resp.json()["themes"]) == 4
+
+
+def test_model_tier_fallback():
+    """档位回退逻辑：显式构造 Settings，不依赖本机 .env 内容。"""
+    from app.core.config import Settings
+
+    base = {"llm_model": "default-m", "llm_provider": "", "_env_file": None}
+    # 未配置任何档位 → 一律回落默认
+    s = Settings(**base, llm_model_nano="", llm_model_mid="", llm_model_pro="")
+    assert s.model_for_tier("nano") == "default-m"
+    assert s.model_for_tier("mid") == "default-m"
+    assert s.model_for_tier("不存在的档位") == "default-m"
+    assert s.tier_configured("nano") is False
+    assert s.tier_configured("default") is True
+    # 配置了 nano → nano 用快档，其余回落默认
+    s2 = Settings(**base, llm_model_nano="nano-m")
+    assert s2.model_for_tier("nano") == "nano-m"
+    assert s2.model_for_tier("mid") == "default-m"
+    assert s2.tier_configured("nano") is True
+
+
+async def test_options_exposes_models(client):
+    resp = await client.get("/api/options")
+    models = resp.json()["models"]
+    assert models["llm_enabled"] is False  # 测试环境为 mock
+    assert models["tiers"] == []
+
+
 def test_prompts_exist_for_all_llm_nodes():
     import app.agent.graph  # noqa: F401 确保图可导入
     for name in ["parse_intent", "enrich_details", "refine", "refine_instruction"]:

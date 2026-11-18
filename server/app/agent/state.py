@@ -14,6 +14,7 @@ class GenState(TypedDict, total=False):
     # 输入
     selections: dict[str, Any]
     theme: str
+    tier: str  # 模型档位：default / nano / mid / pro
     # 节点产物
     parsed: ParsedIntent | None  # parse_intent：主题解析结果
     enriched: list[str]  # enrich：LLM 补全的细节建议（写进 notes）

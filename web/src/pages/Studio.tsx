@@ -19,6 +19,7 @@ export default function Studio() {
   const [tplName, setTplName] = useState('')
   const [themeOptions, setThemeOptions] = useState<string[] | null>(null)
   const [themesOpen, setThemesOpen] = useState(false)
+  const [modelTier, setModelTier] = useState('default')
   const queryClient = useQueryClient()
 
   const { data: options, isLoading } = useQuery({ queryKey: ['options'], queryFn: getOptions })
@@ -37,7 +38,7 @@ export default function Studio() {
   })
 
   const inspireMut = useMutation({
-    mutationFn: () => inspireTheme(selections),
+    mutationFn: () => inspireTheme(selections, modelTier),
     onSuccess: (d) => {
       setThemeOptions(d.themes)
       setThemesOpen(true)
@@ -77,7 +78,7 @@ export default function Studio() {
     setResult(null)
     setError('')
     try {
-      await streamGeneration({ selections, theme }, makeHandlers())
+      await streamGeneration({ selections, theme, model_tier: modelTier }, makeHandlers())
     } catch (e) {
       setError(String(e))
       setPhase('error')
@@ -91,7 +92,7 @@ export default function Studio() {
     setError('')
     const baseId = result.id
     try {
-      await streamRefine(baseId, instruction, makeHandlers())
+      await streamRefine(baseId, instruction, makeHandlers(), modelTier)
     } catch (e) {
       setError(String(e))
       setPhase('error')
@@ -211,6 +212,20 @@ export default function Studio() {
             </div>
           )}
           <div className="row">
+            {options.models.llm_enabled && options.models.tiers.length > 1 && (
+              <select
+                className="tier-select"
+                value={modelTier}
+                onChange={(e) => setModelTier(e.target.value)}
+                title="选择生成所用模型档位"
+              >
+                {options.models.tiers.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.label}
+                  </option>
+                ))}
+              </select>
+            )}
             <button className="primary" disabled={busy} onClick={generate}>
               {phase === 'generating' ? '生成中…' : '✨ 生成提示词'}
             </button>

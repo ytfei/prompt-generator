@@ -5,14 +5,17 @@ class GenerationCreate(BaseModel):
     selections: dict[str, object] = Field(default_factory=dict)
     theme: str = ""
     mode: str = "standard"  # standard / refine
+    model_tier: str = "default"  # default / nano / mid / pro（未配置的档位回落默认模型）
 
 
 class RefineCreate(BaseModel):
     instruction: str = Field(min_length=1)
+    model_tier: str = "default"
 
 
 class InspireCreate(BaseModel):
     selections: dict[str, object] = Field(default_factory=dict)
+    model_tier: str = "default"
 
 
 class FeedbackCreate(BaseModel):

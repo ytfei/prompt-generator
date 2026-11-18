@@ -7,9 +7,12 @@ import pytest
 
 _TMP = tempfile.mkdtemp(prefix="pg-test-")
 os.environ["DATABASE_URL"] = f"sqlite+aiosqlite:///{_TMP}/test.db"
-# 确保测试永远不触网
+# 确保测试永远不触网，且档位配置不依赖开发者本机 .env
 os.environ["LLM_PROVIDER"] = ""
 os.environ["LLM_MODEL"] = ""
+os.environ["LLM_MODEL_NANO"] = ""
+os.environ["LLM_MODEL_MID"] = ""
+os.environ["LLM_MODEL_PRO"] = ""
 
 
 @pytest.fixture()

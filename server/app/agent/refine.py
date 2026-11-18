@@ -32,6 +32,7 @@ class RefineState(TypedDict, total=False):
     base_prompt: str  # 首次迭代的原始提示词
     selections: dict  # 原始维度选择（用于冲突扫描）
     instruction: str  # 本次修改要求
+    tier: str  # 模型档位
     final: dict  # {prompt, notes}（随迭代更新，checkpointer 持久化）
     warnings: list[dict]  # conflict_scan 产出
 
@@ -39,7 +40,7 @@ class RefineState(TypedDict, total=False):
 async def apply_instruction(state: RefineState) -> dict:
     current = state.get("final", {}).get("prompt") or state["base_prompt"]
     instruction = state["instruction"].strip()
-    llm = get_chat_model(temperature=0.5)
+    llm = get_chat_model(temperature=0.5, tier=state.get("tier", "default"))
     if llm is None:
         # mock 降级：显式标注调整要求，接入真实模型后由 LLM 真正改写
         prompt = f"{current}（调整要求：{instruction}）"
@@ -117,7 +118,9 @@ async def _resolve_root(gen_id: str) -> str:
     return current
 
 
-async def stream_refine(gen_id: str, base_prompt: str, selections: dict, instruction: str):
+async def stream_refine(
+    gen_id: str, base_prompt: str, selections: dict, instruction: str, tier: str = "default"
+):
     """执行一次迭代：SSE 步骤流 + 落库新行 + result 事件。"""
     from app.db.models import Generation, new_id, now_iso
     from app.db.session import SessionLocal
@@ -129,9 +132,17 @@ async def stream_refine(gen_id: str, base_prompt: str, selections: dict, instruc
     root_id = await _resolve_root(gen_id)
     thread = {"configurable": {"thread_id": root_id}}
     is_mock = settings.resolved_provider == "mock"
+    model_tag = settings.resolved_provider if is_mock else (
+        f"{settings.resolved_provider}:{settings.model_for_tier(tier)}"
+    )
     updates: dict = {}
     stream = _refine_graph.astream(
-        {"base_prompt": base_prompt, "selections": selections, "instruction": instruction},
+        {
+            "base_prompt": base_prompt,
+            "selections": selections,
+            "instruction": instruction,
+            "tier": tier,
+        },
         thread,
         stream_mode="updates",
     )
@@ -166,7 +177,7 @@ async def stream_refine(gen_id: str, base_prompt: str, selections: dict, instruc
             final_prompt=final["prompt"],
             notes=json.dumps(final["notes"], ensure_ascii=False),
             warnings=json.dumps(warnings, ensure_ascii=False),
-            model=settings.resolved_provider,
+            model=model_tag,
             mode="refine",
             parent_id=gen_id,
         ))
@@ -178,6 +189,6 @@ async def stream_refine(gen_id: str, base_prompt: str, selections: dict, instruc
         "notes": final["notes"],
         "warnings": warnings,
         "suggested_ratio": "",
-        "model": settings.resolved_provider,
+        "model": model_tag,
         "parent_id": gen_id,
     })

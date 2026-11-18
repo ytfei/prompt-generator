@@ -40,9 +40,9 @@ def _clean_lines(text: str) -> list[str]:
     return lines
 
 
-async def inspire_themes(selections: dict) -> list[str]:
+async def inspire_themes(selections: dict, tier: str = "default") -> list[str]:
     chosen = {k: v for k, v in (selections or {}).items() if v}
-    llm = get_chat_model(temperature=1.0)
+    llm = get_chat_model(temperature=1.0, tier=tier)
     if llm is None:
         return random.sample(FALLBACK_THEMES, THEME_COUNT)
     try:

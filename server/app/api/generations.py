@@ -56,7 +56,7 @@ async def ratings_for(gen_ids: list[str]) -> dict[str, int]:
 async def create_generation(body: GenerationCreate):
     """创建生成，响应为 SSE 流（step/warn/result/error 事件）。"""
     return StreamingResponse(
-        stream_generation(body.selections, body.theme, body.mode),
+        stream_generation(body.selections, body.theme, body.mode, body.model_tier),
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
@@ -67,7 +67,9 @@ async def refine_generation(gen_id: str, body: RefineCreate):
     """基于某条生成结果按指令继续修改，响应为 SSE 流；产出新行（mode=refine）。"""
     row = await get_row(gen_id)
     return StreamingResponse(
-        stream_refine(gen_id, row.final_prompt, json.loads(row.selections), body.instruction),
+        stream_refine(
+            gen_id, row.final_prompt, json.loads(row.selections), body.instruction, body.model_tier
+        ),
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )

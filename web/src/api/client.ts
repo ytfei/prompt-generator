@@ -38,10 +38,10 @@ export const submitFeedback = (id: string, rating: 1 | -1) =>
     body: JSON.stringify({ rating }),
   })
 
-export const inspireTheme = (selections: Selections) =>
+export const inspireTheme = (selections: Selections, modelTier: string = 'default') =>
   request<{ themes: string[] }>('/api/inspire-theme', {
     method: 'POST',
-    body: JSON.stringify({ selections }),
+    body: JSON.stringify({ selections, model_tier: modelTier }),
   })
 
 export const listTemplates = () => request<TemplateInfo[]>('/api/templates')
@@ -94,13 +94,17 @@ async function consumeSSE(resp: Response, handlers: GenerateHandlers): Promise<v
 
 /** 生成：POST /api/generations */
 export async function streamGeneration(
-  payload: { selections: Selections; theme: string; mode?: string },
+  payload: { selections: Selections; theme: string; mode?: string; model_tier?: string },
   handlers: GenerateHandlers,
 ): Promise<void> {
   const resp = await fetch('/api/generations', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ...payload, mode: payload.mode ?? 'standard' }),
+    body: JSON.stringify({
+      ...payload,
+      mode: payload.mode ?? 'standard',
+      model_tier: payload.model_tier ?? 'default',
+    }),
   })
   await consumeSSE(resp, handlers)
 }
@@ -110,11 +114,12 @@ export async function streamRefine(
   id: string,
   instruction: string,
   handlers: GenerateHandlers,
+  modelTier: string = 'default',
 ): Promise<void> {
   const resp = await fetch(`/api/generations/${id}/refine`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ instruction }),
+    body: JSON.stringify({ instruction, model_tier: modelTier }),
   })
   await consumeSSE(resp, handlers)
 }

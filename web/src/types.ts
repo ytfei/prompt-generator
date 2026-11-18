@@ -22,9 +22,16 @@ export interface Preset {
   selections: Record<string, string | string[]>
 }
 
+export interface ModelTier {
+  id: 'default' | 'nano' | 'mid' | 'pro'
+  label: string
+  configured: boolean
+}
+
 export interface OptionsResponse {
   groups: Record<string, OptionGroup>
   presets: Preset[]
+  models: { llm_enabled: boolean; tiers: ModelTier[] }
 }
 
 export interface Note {

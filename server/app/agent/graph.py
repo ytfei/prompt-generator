@@ -36,7 +36,8 @@ async def parse_intent(state: GenState) -> dict:
     theme = state["theme"].strip()
     if not theme:
         return {"parsed": None}
-    llm = get_chat_model(temperature=0.3)
+    # 意图解析是轻量结构化任务，固定走快档（nano 未配置时自动回落默认模型）
+    llm = get_chat_model(temperature=0.3, tier="nano")
     if llm is not None:
         try:
             from pydantic import BaseModel
@@ -62,7 +63,7 @@ async def enrich_details(state: GenState) -> dict:
     creative = state["selections"].get("creative")
     if creative != "充分发挥" or not state["theme"].strip():
         return {"enriched": []}
-    llm = get_chat_model(temperature=0.9)
+    llm = get_chat_model(temperature=0.9, tier=state.get("tier", "default"))
     if llm is not None:
         try:
             chosen = {k: v for k, v in state["selections"].items() if v}
@@ -99,7 +100,7 @@ async def assemble(state: GenState) -> dict:
 
 async def refine(state: GenState) -> dict:
     """润色自检。mock 模式直接透传初稿（初稿已含规则修正）。"""
-    llm = get_chat_model(temperature=0.6)
+    llm = get_chat_model(temperature=0.6, tier=state.get("tier", "default"))
     if llm is None:
         return {"final": state["final"]}
     try:
@@ -150,7 +151,9 @@ def sse(event: str, data: dict) -> str:
     return f"event: {event}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"
 
 
-async def stream_generation(selections: dict, theme: str, mode: str = "standard"):
+async def stream_generation(
+    selections: dict, theme: str, mode: str = "standard", tier: str = "default"
+):
     """执行生成图，产出 SSE 文本流；结束后落库并发出 result 事件。
 
     事件时序：对每个节点先发 running（mock 模式停顿片刻模拟处理耗时），
@@ -159,8 +162,11 @@ async def stream_generation(selections: dict, theme: str, mode: str = "standard"
     from app.db.models import Generation, new_id, now_iso
     from app.db.session import SessionLocal
 
-    init = {"selections": selections, "theme": theme}
+    init = {"selections": selections, "theme": theme, "tier": tier}
     is_mock = settings.resolved_provider == "mock"
+    model_tag = settings.resolved_provider if is_mock else (
+        f"{settings.resolved_provider}:{settings.model_for_tier(tier)}"
+    )
     updates: dict = {}
     stream = graph.astream(init, stream_mode="updates")
 
@@ -191,7 +197,7 @@ async def stream_generation(selections: dict, theme: str, mode: str = "standard"
             final_prompt=final.get("prompt", ""),
             notes=json.dumps(final.get("notes", []), ensure_ascii=False),
             warnings=json.dumps(final.get("warnings", []), ensure_ascii=False),
-            model=settings.resolved_provider,
+            model=model_tag,
             mode=mode,
         ))
         await session.commit()
@@ -202,5 +208,5 @@ async def stream_generation(selections: dict, theme: str, mode: str = "standard"
         "notes": final.get("notes", []),
         "warnings": final.get("warnings", []),
         "suggested_ratio": final.get("suggested_ratio", ""),
-        "model": settings.resolved_provider,
+        "model": model_tag,
     })

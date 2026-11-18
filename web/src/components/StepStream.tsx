@@ -1,19 +1,21 @@
-import { NODE_LABELS } from '../types'
+import { GENERATE_NODE_ORDER, NODE_LABELS, REFINE_NODE_ORDER, type StepState } from '../types'
 
-const NODE_ORDER = ['parse_intent', 'enrich_details', 'conflict_check', 'assemble', 'refine']
+export type { StepState }
 
-export interface StepState {
-  node: string
-  status: 'running' | 'done'
-}
-
-export default function StepStream({ steps }: { steps: StepState[] }) {
+export default function StepStream({
+  steps,
+  mode = 'generate',
+}: {
+  steps: StepState[]
+  mode?: 'generate' | 'refine'
+}) {
   if (steps.length === 0) return null
+  const order = mode === 'refine' ? REFINE_NODE_ORDER : GENERATE_NODE_ORDER
   const doneCount = steps.filter((s) => s.status === 'done').length
 
   return (
     <ul className="steps">
-      {NODE_ORDER.map((node, i) => {
+      {order.map((node, i) => {
         const state = steps.find((s) => s.node === node)
         const cls = !state
           ? i <= doneCount

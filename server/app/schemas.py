@@ -4,7 +4,16 @@ from pydantic import BaseModel, Field
 class GenerationCreate(BaseModel):
     selections: dict[str, object] = Field(default_factory=dict)
     theme: str = ""
-    mode: str = "standard"  # standard（P2 增加 deep）
+    mode: str = "standard"  # standard / refine
+
+
+class RefineCreate(BaseModel):
+    instruction: str = Field(min_length=1)
+
+
+class FeedbackCreate(BaseModel):
+    rating: int  # 1=出图好，-1=出图差
+    comment: str = ""
 
 
 class GenerationOut(BaseModel):
@@ -18,6 +27,8 @@ class GenerationOut(BaseModel):
     model: str
     mode: str
     favorite: bool
+    parent_id: str | None = None
+    rating: int | None = None
 
 
 class TemplateCreate(BaseModel):

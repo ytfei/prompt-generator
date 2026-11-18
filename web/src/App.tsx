@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { BrowserRouter, Link, Route, Routes } from 'react-router-dom'
 import History from './pages/History'
 import Studio from './pages/Studio'
+import Templates from './pages/Templates'
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } },
@@ -18,6 +19,7 @@ export default function App() {
           <nav className="nav">
             <Link to="/">工作台</Link>
             <Link to="/history">历史记录</Link>
+            <Link to="/templates">我的模板</Link>
           </nav>
           <span className="tag">P1 · React + FastAPI + LangGraph</span>
           <p className="sub">选配置 → 写主题 → Agent 生成优化 → 复制到「即梦」生图。</p>
@@ -25,6 +27,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Studio />} />
           <Route path="/history" element={<History />} />
+          <Route path="/templates" element={<Templates />} />
         </Routes>
       </BrowserRouter>
     </QueryClientProvider>

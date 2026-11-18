@@ -1,4 +1,11 @@
-import type { GenerationItem, OptionsResponse, ResultEvent, Selections, StepEvent } from '../types'
+import type {
+  GenerationItem,
+  OptionsResponse,
+  ResultEvent,
+  Selections,
+  StepEvent,
+  TemplateInfo,
+} from '../types'
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const resp = await fetch(path, {
@@ -25,8 +32,13 @@ export const toggleFavorite = (id: string, favorite: boolean) =>
 export const deleteGeneration = (id: string) =>
   request<{ ok: boolean }>(`/api/generations/${id}`, { method: 'DELETE' })
 
-export const listTemplates = () =>
-  request<{ id: string; name: string; selections: Selections }[]>('/api/templates')
+export const submitFeedback = (id: string, rating: 1 | -1) =>
+  request<{ ok: boolean; rating: number }>(`/api/generations/${id}/feedback`, {
+    method: 'POST',
+    body: JSON.stringify({ rating }),
+  })
+
+export const listTemplates = () => request<TemplateInfo[]>('/api/templates')
 
 export const createTemplate = (name: string, selections: Selections) =>
   request<{ id: string }>('/api/templates', {
@@ -44,18 +56,9 @@ export interface GenerateHandlers {
   onError: (message: string) => void
 }
 
-/** POST /api/generations，手动解析 SSE 流（EventSource 不支持 POST）。 */
-export async function streamGeneration(
-  payload: { selections: Selections; theme: string; mode?: string },
-  handlers: GenerateHandlers,
-): Promise<void> {
-  const resp = await fetch('/api/generations', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ...payload, mode: payload.mode ?? 'standard' }),
-  })
-  if (!resp.ok || !resp.body) throw new Error(`生成请求失败：${resp.status}`)
-
+/** 手动解析 SSE 流（EventSource 不支持 POST），生成与迭代共用。 */
+async function consumeSSE(resp: Response, handlers: GenerateHandlers): Promise<void> {
+  if (!resp.ok || !resp.body) throw new Error(`请求失败：${resp.status}`)
   const reader = resp.body.getReader()
   const decoder = new TextDecoder()
   let buffer = ''
@@ -81,4 +84,31 @@ export async function streamGeneration(
       else if (event === 'error') handlers.onError(parsed.message)
     }
   }
+}
+
+/** 生成：POST /api/generations */
+export async function streamGeneration(
+  payload: { selections: Selections; theme: string; mode?: string },
+  handlers: GenerateHandlers,
+): Promise<void> {
+  const resp = await fetch('/api/generations', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ...payload, mode: payload.mode ?? 'standard' }),
+  })
+  await consumeSSE(resp, handlers)
+}
+
+/** 多轮迭代：基于某条结果按指令继续修改 */
+export async function streamRefine(
+  id: string,
+  instruction: string,
+  handlers: GenerateHandlers,
+): Promise<void> {
+  const resp = await fetch(`/api/generations/${id}/refine`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ instruction }),
+  })
+  await consumeSSE(resp, handlers)
 }

@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
-import { deleteGeneration, listGenerations, toggleFavorite } from '../api/client'
+import { deleteGeneration, listGenerations, submitFeedback, toggleFavorite } from '../api/client'
 import type { GenerationItem } from '../types'
 
 function CopyButton({ text }: { text: string }) {
@@ -35,6 +35,13 @@ export default function History() {
     mutationFn: (id: string) => deleteGeneration(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['generations'] }),
   })
+  const fbMut = useMutation({
+    mutationFn: ({ id, rating }: { id: string; rating: 1 | -1 }) => submitFeedback(id, rating),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['generations'] }),
+  })
+
+  const renderRating = (it: GenerationItem) =>
+    it.rating === 1 ? <span className="rating-badge good">👍</span> : it.rating === -1 ? <span className="rating-badge bad">👎</span> : null
 
   if (isLoading) return <div className="page-loading">加载历史中…</div>
 
@@ -58,7 +65,15 @@ export default function History() {
                 <span className="history-theme">{it.theme}</span>
               </>
             )}
+            {it.mode === 'refine' && <span className="mode-badge">迭代</span>}
+            {renderRating(it)}
             <span style={{ flex: 1 }} />
+            <button className="mini-btn" onClick={() => fbMut.mutate({ id: it.id, rating: 1 })}>
+              👍
+            </button>
+            <button className="mini-btn" onClick={() => fbMut.mutate({ id: it.id, rating: -1 })}>
+              👎
+            </button>
             <button className="mini-btn" onClick={() => favMut.mutate({ id: it.id, favorite: !it.favorite })}>
               {it.favorite ? '★ 已收藏' : '☆ 收藏'}
             </button>

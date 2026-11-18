@@ -1,8 +1,17 @@
 import { useState } from 'react'
 import type { ResultEvent } from '../types'
 
-export default function ResultCard({ result }: { result: ResultEvent }) {
+interface Props {
+  result: ResultEvent
+  refining: boolean
+  onRefine: (instruction: string) => void
+  onFeedback: (rating: 1 | -1) => void
+}
+
+export default function ResultCard({ result, refining, onRefine, onFeedback }: Props) {
   const [copied, setCopied] = useState(false)
+  const [instruction, setInstruction] = useState('')
+  const [rating, setRating] = useState<1 | -1 | null>(null)
 
   const copy = async () => {
     try {
@@ -21,7 +30,12 @@ export default function ResultCard({ result }: { result: ResultEvent }) {
 
   return (
     <div className="card">
-      <h2>最终提示词</h2>
+      <h2>
+        最终提示词
+        {result.parent_id && (
+          <span className="mode-badge">基于上一条迭代</span>
+        )}
+      </h2>
       <div className="result-text">{result.prompt}</div>
       {result.warnings.length > 0 && (
         <div className="notes">
@@ -49,6 +63,45 @@ export default function ResultCard({ result }: { result: ResultEvent }) {
           <span className="ratio-badge">建议画幅：{result.suggested_ratio}</span>
         )}
         <span className="ratio-badge">模型：{result.model}</span>
+      </div>
+
+      <div className="refine-row">
+        <input
+          placeholder="基于这条继续改，如：更亮一点 / 换成居中构图…"
+          value={instruction}
+          onChange={(e) => setInstruction(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && instruction.trim() && !refining) onRefine(instruction.trim())
+          }}
+        />
+        <button
+          disabled={!instruction.trim() || refining}
+          onClick={() => onRefine(instruction.trim())}
+        >
+          {refining ? '修改中…' : '继续修改'}
+        </button>
+      </div>
+
+      <div className="feedback-row">
+        <span>出图效果（在即梦生图后回来标记）：</span>
+        <button
+          className={`mini-btn${rating === 1 ? ' good' : ''}`}
+          onClick={() => {
+            setRating(1)
+            onFeedback(1)
+          }}
+        >
+          👍 好
+        </button>
+        <button
+          className={`mini-btn${rating === -1 ? ' bad' : ''}`}
+          onClick={() => {
+            setRating(-1)
+            onFeedback(-1)
+          }}
+        >
+          👎 差
+        </button>
       </div>
     </div>
   )

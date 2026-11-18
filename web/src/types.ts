@@ -41,9 +41,23 @@ export interface GenerationItem {
   model: string
   mode: string
   favorite: boolean
+  parent_id: string | null
+  rating: number | null
+}
+
+export interface TemplateInfo {
+  id: string
+  name: string
+  selections: Selections
+  created_at: string
 }
 
 export type Selections = Record<string, string | string[]>
+
+export interface StepState {
+  node: string
+  status: 'running' | 'done'
+}
 
 /** SSE 事件 */
 export interface StepEvent {
@@ -59,6 +73,7 @@ export interface ResultEvent {
   warnings: Note[]
   suggested_ratio: string
   model: string
+  parent_id?: string
 }
 
 export const NODE_LABELS: Record<string, string> = {
@@ -67,4 +82,16 @@ export const NODE_LABELS: Record<string, string> = {
   conflict_check: '检查并修正维度冲突',
   assemble: '汇总组装提示词',
   refine: '润色输出最终结果',
+  apply_instruction: '应用修改要求',
+  conflict_scan: '冲突扫描',
 }
+
+export const GENERATE_NODE_ORDER = [
+  'parse_intent',
+  'enrich_details',
+  'conflict_check',
+  'assemble',
+  'refine',
+]
+
+export const REFINE_NODE_ORDER = ['apply_instruction', 'conflict_scan']

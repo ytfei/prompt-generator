@@ -1,13 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
-import { createTemplate, getOptions, streamGeneration } from '../api/client'
+import { createTemplate, getOptions, streamGeneration, streamRefine, submitFeedback } from '../api/client'
+import type { GenerateHandlers } from '../api/client'
 import ChipGroup from '../components/ChipGroup'
 import ResultCard from '../components/ResultCard'
-import StepStream, { type StepState } from '../components/StepStream'
+import StepStream from '../components/StepStream'
 import { useSelections } from '../stores/selections'
-import type { ResultEvent } from '../types'
+import type { ResultEvent, StepState } from '../types'
 
-type Phase = 'idle' | 'generating' | 'done' | 'error'
+type Phase = 'idle' | 'generating' | 'refining' | 'done' | 'error'
 
 export default function Studio() {
   const { selections, theme, setTheme, applySelections, reset } = useSelections()
@@ -28,7 +29,29 @@ export default function Studio() {
     },
   })
 
+  const feedbackMut = useMutation({
+    mutationFn: ({ id, rating }: { id: string; rating: 1 | -1 }) => submitFeedback(id, rating),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['generations'] }),
+  })
+
   const setRatio = (ratio: string) => applySelections({ ...selections, ratio })
+
+  const makeHandlers = (): GenerateHandlers => ({
+    onStep: (ev) =>
+      setSteps((prev) => [
+        ...prev.filter((s) => s.node !== ev.node),
+        { node: ev.node, status: ev.status },
+      ]),
+    onWarn: () => {},
+    onResult: (ev) => {
+      setResult(ev)
+      setPhase('done')
+    },
+    onError: (msg) => {
+      setError(msg)
+      setPhase('error')
+    },
+  })
 
   const generate = async () => {
     setPhase('generating')
@@ -36,32 +59,33 @@ export default function Studio() {
     setResult(null)
     setError('')
     try {
-      await streamGeneration({ selections, theme }, {
-        onStep: (ev) =>
-          setSteps((prev) => [
-            ...prev.filter((s) => s.node !== ev.node),
-            { node: ev.node, status: ev.status },
-          ]),
-        onWarn: () => {},
-        onResult: (ev) => {
-          setResult(ev)
-          setPhase('done')
-        },
-        onError: (msg) => {
-          setError(msg)
-          setPhase('error')
-        },
-      })
+      await streamGeneration({ selections, theme }, makeHandlers())
     } catch (e) {
       setError(String(e))
       setPhase('error')
     }
   }
 
+  const handleRefine = async (instruction: string) => {
+    if (!result) return
+    setPhase('refining')
+    setSteps([])
+    setError('')
+    const baseId = result.id
+    try {
+      await streamRefine(baseId, instruction, makeHandlers())
+    } catch (e) {
+      setError(String(e))
+      setPhase('error')
+    } finally {
+      queryClient.invalidateQueries({ queryKey: ['generations'] })
+    }
+  }
+
   if (isLoading) return <div className="page-loading">加载维度配置中…</div>
   if (!options) return <div className="page-loading">配置加载失败，请确认后端已启动</div>
 
-  const generating = phase === 'generating'
+  const busy = phase === 'generating' || phase === 'refining'
 
   return (
     <div className="layout">
@@ -96,11 +120,11 @@ export default function Studio() {
             onChange={(e) => setTheme(e.target.value)}
           />
           <div className="row">
-            <button className="primary" disabled={generating} onClick={generate}>
-              {generating ? '生成中…' : '✨ 生成提示词'}
+            <button className="primary" disabled={busy} onClick={generate}>
+              {phase === 'generating' ? '生成中…' : '✨ 生成提示词'}
             </button>
           </div>
-          <StepStream steps={steps} />
+          <StepStream steps={steps} mode={phase === 'refining' || result?.parent_id ? 'refine' : 'generate'} />
           {phase === 'error' && <div className="note-item note-warn" style={{ marginTop: 8 }}>⚠ {error}</div>}
         </div>
 
@@ -117,7 +141,14 @@ export default function Studio() {
           </div>
         )}
 
-        {result && <ResultCard result={result} />}
+        {result && (
+          <ResultCard
+            result={result}
+            refining={phase === 'refining'}
+            onRefine={handleRefine}
+            onFeedback={(rating) => feedbackMut.mutate({ id: result.id, rating })}
+          />
+        )}
       </div>
     </div>
   )

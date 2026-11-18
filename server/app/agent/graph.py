@@ -16,6 +16,7 @@ import logging
 from langgraph.graph import END, START, StateGraph
 
 from app.agent import assemble as assemble_mod
+from app.agent.prompt_loader import load_prompt
 from app.agent.rules import check_conflicts
 from app.agent.state import GenState
 from app.core.config import settings
@@ -47,7 +48,7 @@ async def parse_intent(state: GenState) -> dict:
                 summary: str = ""
 
             result = await llm.with_structured_output(Intent).ainvoke(
-                f"解析这幅文生图主题描述的主体、动作、场景，并给一句话意图概括：\n{theme}"
+                load_prompt("parse_intent", theme=theme)
             )
             return {"parsed": result.model_dump()}
         except Exception:
@@ -66,10 +67,10 @@ async def enrich_details(state: GenState) -> dict:
         try:
             chosen = {k: v for k, v in state["selections"].items() if v}
             result = await llm.ainvoke(
-                "主题：{}\n已选配置：{}\n"
-                "请给出 2~3 条具体画面细节建议（中文短语，每条一句），"
-                "用于增强画面表现力，不得与已选配置冲突。每行一条，不要编号。".format(
-                    state["theme"].strip(), json.dumps(chosen, ensure_ascii=False)
+                load_prompt(
+                    "enrich_details",
+                    theme=state["theme"].strip(),
+                    selections=json.dumps(chosen, ensure_ascii=False),
                 )
             )
             lines = [ln.strip("-• ") for ln in result.content.splitlines() if ln.strip()]
@@ -109,9 +110,7 @@ async def refine(state: GenState) -> dict:
             polish_notes: list[str] = Field(default_factory=list, description="润色说明，每条一句")
 
         result = await llm.with_structured_output(FinalPrompt).ainvoke(
-            "以下是一条将粘贴到「即梦」执行文生图的提示词初稿：\n\n{}\n\n"
-            "请在不改变语义与所选配置的前提下润色：让画面描述更具体、更有画面感，"
-            "保持中文、保持画幅比例与排除项原样。返回润色后的完整提示词与修改说明。".format(state["draft"])
+            load_prompt("refine", draft=state["draft"])
         )
         final = dict(state["final"])
         final["prompt"] = result.prompt

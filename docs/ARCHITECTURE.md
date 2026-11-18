@@ -193,7 +193,8 @@ CREATE TABLE feedback (
 | DELETE | `/api/generations/{id}` | 删除 |
 | GET/POST | `/api/templates` | 模板列表 / 保存当前配置为模板 |
 | DELETE | `/api/templates/{id}` | 删除模板 |
-| POST | `/api/generations/{id}/refine` | P2：基于该条继续迭代（DeepAgents / checkpointer 线程） |
+| POST | `/api/generations/{id}/refine` | 多轮迭代：按指令修改，SSE 流；checkpointer 线程延续，产出新行（mode=refine）✅ 已实现 |
+| POST | `/api/generations/{id}/feedback` | 出图反馈（rating 1/-1，覆盖式）✅ 已实现 |
 
 **SSE 事件协议**（`POST /api/generations` 响应）：
 
@@ -277,7 +278,7 @@ clean:              ## 清理缓存与构建产物
 | M3 生成链路（mock） | LangGraph 五节点 + rules.py + SSE；`provider=mock` 免 Key 跑通全流程 | 点击生成看到真实事件流，产出结构化提示词 |
 | M4 真实 LLM | `init_chat_model` 接方舟/其他 OpenAI 兼容端点；refine 结构化输出 | 真实模型生成质量达标；Key 安全约定落实 |
 | M5 历史与模板 | SQLite 三表 + generations/templates CRUD + 历史页 | 复制、收藏、删除、模板复用可用 |
-| P2 起 | DeepAgents 深度迭代、checkpointer 多轮修改、feedback 闭环、双语 | 另行细化 |
+| P2 起 | DeepAgents 深度迭代、多轮修改（✅ 已实现）、feedback 闭环（✅ 已实现）、双语 | 另行细化 |
 
 ## 11. 风险与决策记录
 

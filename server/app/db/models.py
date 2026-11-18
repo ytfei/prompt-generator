@@ -30,6 +30,17 @@ class Generation(Base):
     model: Mapped[str] = mapped_column(String)
     mode: Mapped[str] = mapped_column(String, default="standard")
     favorite: Mapped[int] = mapped_column(Integer, default=0)
+    parent_id: Mapped[str | None] = mapped_column(String, nullable=True)  # 迭代链上游
+
+
+class Feedback(Base):
+    __tablename__ = "feedback"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True)
+    generation_id: Mapped[str] = mapped_column(String, index=True)
+    rating: Mapped[int] = mapped_column(Integer)  # 1=出图好，-1=出图差
+    comment: Mapped[str] = mapped_column(String, default="")
+    created_at: Mapped[str] = mapped_column(String)
 
 
 class Template(Base):

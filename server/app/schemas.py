@@ -19,6 +19,17 @@ class InspireCreate(BaseModel):
     theme: str = ""  # 已填写时围绕主题生成变体，留空时按配置发散
 
 
+class I2ICreate(BaseModel):
+    desc: str = Field(min_length=1)  # 图片内容描述，必填
+    scene: str = "modify"  # creative / modify / style
+    direction: str = ""  # 创意方向（creative 场景，可空=自由脑洞）
+    style: str = ""  # 目标风格（style 场景，可空=Agent 自判）
+    modify: str = ""  # 修改意向（modify 场景）
+    ratio: str = ""  # 目标画幅（扩图模板联动）
+    template: str = ""  # 套用的修改模板 id
+    model_tier: str = "default"
+
+
 class FeedbackCreate(BaseModel):
     rating: int  # 1=出图好，-1=出图差
     comment: str = ""

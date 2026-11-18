@@ -21,13 +21,29 @@
     background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.6;
   }
   header {
-    padding: 26px 32px 18px; max-width: 1280px; margin: 0 auto;
+    padding: 26px 32px 14px; max-width: 1280px; margin: 0 auto;
     display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap;
   }
   header h1 { font-size: 22px; letter-spacing: .5px; }
   header h1 em { font-style: normal; color: var(--accent); }
   header .tag { font-size: 12px; color: var(--text-2); background: #eceef5; padding: 3px 10px; border-radius: 999px; }
   header .sub { width: 100%; color: var(--text-2); font-size: 13px; }
+
+  /* Tab 栏 */
+  .tab-bar {
+    max-width: 1280px; margin: 0 auto; padding: 0 32px;
+    display: flex; gap: 10px; border-bottom: 1px solid var(--border); margin-bottom: 20px;
+  }
+  .tab-btn {
+    border: 1px solid var(--border); border-bottom: none; background: var(--card);
+    color: var(--text-2); padding: 10px 26px; font-size: 14.5px; font-weight: 600;
+    cursor: pointer; border-radius: 12px 12px 0 0; transition: .15s;
+    display: flex; align-items: center; gap: 8px; margin-bottom: -1px;
+  }
+  .tab-btn:hover { color: var(--accent); }
+  .tab-btn.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .tab-btn .beta { font-size: 10.5px; font-weight: 500; padding: 1px 7px; border-radius: 999px; background: #fef3c7; color: #b45309; }
+  .tab-btn.on .beta { background: rgba(255,255,255,.25); color: #fff; }
 
   .layout {
     max-width: 1280px; margin: 0 auto; padding: 0 32px 48px;
@@ -65,15 +81,29 @@
   }
   .neg-custom:focus { border-color: var(--accent); }
 
+  /* 修改模板按钮 */
+  .tpl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: 8px; margin-bottom: 12px; }
+  .tpl-btn {
+    border: 1px solid var(--border); background: #fafbfe; color: var(--text);
+    padding: 8px 10px; border-radius: 10px; cursor: pointer; font-size: 12.5px; transition: .12s; text-align: left;
+  }
+  .tpl-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .tpl-btn.on { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 600; }
+  .tpl-btn .t-use { display: block; font-size: 11px; color: var(--text-2); font-weight: 400; margin-top: 2px; }
+  .tpl-btn.on .t-use { color: var(--accent); opacity: .8; }
+
   /* 右栏 */
   .panel { position: sticky; top: 20px; display: flex; flex-direction: column; gap: 14px; }
   .panel .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; }
   .panel h2 { font-size: 15px; margin-bottom: 10px; }
-  textarea#theme {
+  textarea.theme-ta {
     width: 100%; min-height: 96px; resize: vertical; border: 1px solid var(--border); border-radius: 10px;
     padding: 10px 12px; font-size: 13.5px; font-family: inherit; color: var(--text); outline: none; line-height: 1.6;
   }
-  textarea#theme:focus { border-color: var(--accent); }
+  textarea.theme-ta:focus { border-color: var(--accent); }
+  textarea.theme-ta.err { border-color: #ef4444; }
+  .ta-err-tip { display: none; font-size: 12px; color: #ef4444; margin-top: 6px; }
+  .ta-err-tip.show { display: block; }
   .row { display: flex; gap: 10px; margin-top: 12px; }
   button.primary {
     flex: 1; background: var(--accent); color: #fff; border: none; border-radius: 10px;
@@ -97,15 +127,20 @@
   .steps li.done .dot::before { content: "✓"; color: #22c07a; }
 
   /* 结果 */
-  #resultWrap { display: none; }
+  #resultWrap, #i2iResultWrap { display: none; }
   .result-text {
     background: #f8f9fd; border: 1px solid var(--border); border-radius: 10px;
     padding: 12px 14px; font-size: 13px; line-height: 1.8; white-space: pre-wrap; word-break: break-all;
   }
+  .result-card { border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; margin-bottom: 12px; background: #fff; }
+  .result-card:last-child { margin-bottom: 0; }
+  .result-card .card-label { font-size: 12px; font-weight: 700; color: var(--accent); margin-bottom: 8px; }
+  .result-card .card-label span { font-weight: 400; color: var(--text-2); margin-left: 6px; }
   .notes { margin-top: 10px; font-size: 12px; color: var(--text-2); }
   .notes .note-item { padding: 2px 0; }
   .notes .note-item::before { content: "· "; color: var(--accent); font-weight: 700; }
   .notes .note-warn { color: #d97706; }
+  .notes .note-warn::before { content: "⚠ " !important; color: #d97706 !important; }
   .copy-row { display: flex; align-items: center; gap: 10px; margin-top: 12px; }
   .copy-btn {
     background: #22c07a; color: #fff; border: none; border-radius: 8px;
@@ -120,52 +155,106 @@
 
 <header>
   <h1>提示词<em>工坊</em></h1>
-  <span class="tag">静态原型 P0</span>
-  <p class="sub">选配置 → 写主题 → Agent 生成优化 → 复制到「即梦」生图。所有配置仅保存在本地浏览器。</p>
+  <span class="tag">静态原型 P0 · v0.2</span>
+  <p class="sub">文生图：选配置 → 写主题 → Agent 生成 → 复制到「即梦」生图；图生图：描述已有图片 + 修改/创意意向 → 生成图生图提示词。所有配置仅保存在本地浏览器。</p>
 </header>
 
-<div class="layout">
-  <!-- 左侧：选项 -->
-  <div>
-    <div class="presets">
-      <span class="label">预设模板</span>
-      <button class="preset-btn" data-preset="tech">公众号 · 科技感封面</button>
-      <button class="preset-btn" data-preset="warm">公众号 · 治愈插画</button>
-      <button class="preset-btn" data-preset="photo">公众号 · 写实摄影配图</button>
-      <button class="preset-btn" id="resetBtn" style="margin-left:auto">↺ 重置全部</button>
-    </div>
-    <div class="groups" id="groups"></div>
-  </div>
+<div class="tab-bar">
+  <button class="tab-btn on" data-tab="t2i">✍️ 文生图</button>
+  <button class="tab-btn" data-tab="i2i">🖼️ 图生图 <span class="beta">新</span></button>
+</div>
 
-  <!-- 右侧：主题 + 生成 -->
-  <div class="panel">
-    <div class="card">
-      <h2>主题描述 <span style="font-size:12px;color:var(--text-2);font-weight:400">（可留空）</span></h2>
-      <textarea id="theme" placeholder="例如：一个年轻人在深夜的书房里写公众号文章，屏幕光映在脸上……"></textarea>
-      <div class="row">
-        <button class="primary" id="genBtn">✨ 生成提示词</button>
+<!-- ==================== Tab 1：文生图（原功能） ==================== -->
+<div id="tab-t2i">
+  <div class="layout">
+    <!-- 左侧：选项 -->
+    <div>
+      <div class="presets">
+        <span class="label">预设模板</span>
+        <button class="preset-btn" data-preset="tech">公众号 · 科技感封面</button>
+        <button class="preset-btn" data-preset="warm">公众号 · 治愈插画</button>
+        <button class="preset-btn" data-preset="photo">公众号 · 写实摄影配图</button>
+        <button class="preset-btn" id="resetBtn" style="margin-left:auto">↺ 重置全部</button>
       </div>
-      <ul class="steps" id="steps" style="display:none;margin-top:12px">
-        <li data-step="0"><span class="dot"></span> 解析主题意图</li>
-        <li data-step="1"><span class="dot"></span> 补全画面细节</li>
-        <li data-step="2"><span class="dot"></span> 检查并修正维度冲突</li>
-        <li data-step="3"><span class="dot"></span> 输出最终提示词</li>
-      </ul>
+      <div class="groups" id="groups"></div>
     </div>
 
-    <div class="card" id="resultWrap">
-      <h2>最终提示词</h2>
-      <div class="result-text" id="resultText"></div>
-      <div class="notes" id="notes"></div>
-      <div class="copy-row">
-        <button class="copy-btn" id="copyBtn">复制</button>
-        <span class="ratio-badge" id="ratioBadge"></span>
+    <!-- 右侧：主题 + 生成 -->
+    <div class="panel">
+      <div class="card">
+        <h2>主题描述 <span style="font-size:12px;color:var(--text-2);font-weight:400">（可留空）</span></h2>
+        <textarea id="theme" class="theme-ta" placeholder="例如：一个年轻人在深夜的书房里写公众号文章，屏幕光映在脸上……"></textarea>
+        <div class="row">
+          <button class="primary" id="genBtn">✨ 生成提示词</button>
+        </div>
+        <ul class="steps" id="steps" style="display:none;margin-top:12px">
+          <li data-step="0"><span class="dot"></span> 解析主题意图</li>
+          <li data-step="1"><span class="dot"></span> 补全画面细节</li>
+          <li data-step="2"><span class="dot"></span> 检查并修正维度冲突</li>
+          <li data-step="3"><span class="dot"></span> 输出最终提示词</li>
+        </ul>
+      </div>
+
+      <div class="card" id="resultWrap">
+        <h2>最终提示词</h2>
+        <div class="result-text" id="resultText"></div>
+        <div class="notes" id="notes"></div>
+        <div class="copy-row">
+          <button class="copy-btn" id="copyBtn">复制</button>
+          <span class="ratio-badge" id="ratioBadge"></span>
+        </div>
       </div>
     </div>
   </div>
 </div>
 
-<footer>提示词工坊 v0.1 · 本原型为交互演示，生成逻辑为本地模拟，P1 将接入真实 LLM Agent</footer>
+<!-- ==================== Tab 2：图生图（新增） ==================== -->
+<div id="tab-i2i" style="display:none">
+  <div class="layout">
+    <!-- 左侧：场景与输入 -->
+    <div>
+      <div class="group" style="margin-bottom:14px">
+        <h3>🧭 选择场景 <span class="state" id="i2i-scene-state"></span></h3>
+        <div class="hint">场景决定要填什么、Agent 怎么生成</div>
+        <div class="chips" id="i2iSceneChips"></div>
+      </div>
+
+      <div class="group" style="margin-bottom:14px">
+        <h3>📷 图片内容描述 <span class="state" id="i2i-desc-state"></span></h3>
+        <div class="hint">必填。说清"图片中有什么"即可，不必精确到构图细节。无需上传图片。</div>
+        <textarea id="i2iDesc" class="theme-ta" style="min-height:80px" placeholder="例如：一只橘猫趴在窗台上晒太阳，窗外是城市街景"></textarea>
+        <div class="ta-err-tip" id="i2iDescErr">请先描述图片内容，图生图需要参照原图信息</div>
+      </div>
+
+      <div class="group" id="i2iExtra"><!-- 按场景动态渲染 --></div>
+    </div>
+
+    <!-- 右侧：生成 + 结果 -->
+    <div class="panel">
+      <div class="card">
+        <h2>图生图提示词</h2>
+        <div style="font-size:12px;color:var(--text-2);margin-bottom:4px">生成后到即梦：<b>上传原图 → 粘贴提示词</b></div>
+        <div class="row">
+          <button class="primary" id="i2iGenBtn">✨ 生成提示词</button>
+        </div>
+        <ul class="steps" id="i2iSteps" style="display:none;margin-top:12px">
+          <li data-step="0"><span class="dot"></span> 理解原图内容</li>
+          <li data-step="1"><span class="dot"></span> 对齐修改/创意意图</li>
+          <li data-step="2"><span class="dot"></span> 检查冲突与融合质量</li>
+          <li data-step="3"><span class="dot"></span> 输出提示词</li>
+        </ul>
+      </div>
+
+      <div class="card" id="i2iResultWrap">
+        <h2 id="i2iResultTitle">提示词</h2>
+        <div id="i2iResultCards"></div>
+        <div class="notes" id="i2iNotes"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>提示词工坊 v0.2 · 本原型为交互演示，生成逻辑为本地模拟，P1 将接入真实 LLM Agent</footer>
 
 <script>
 /* ============ 数据定义（与 PRD 5.1 维度表一致） ============ */
@@ -320,7 +409,41 @@ const PRESETS = {
   photo: { label: '公众号 · 写实摄影配图', sel: { usage:'公众号次图', ratio:'1:1', style:'写实摄影', mood:'怀旧复古', light:'自然柔光', tone:'胶片复古', comp:'三分法', shot:'中景', bg:'虚化光斑', texture:'胶片颗粒', text:'无文字要求', creative:'平衡', negative:['水印','低质量','肢体畸形'] } },
 };
 
-/* ============ 状态与渲染 ============ */
+/* ============ Tab 切换 ============ */
+const activeTab = localStorage.getItem('pg-tab-v1') || 't2i';
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('on', b === btn));
+    document.getElementById('tab-t2i').style.display = btn.dataset.tab === 't2i' ? '' : 'none';
+    document.getElementById('tab-i2i').style.display = btn.dataset.tab === 'i2i' ? '' : 'none';
+    localStorage.setItem('pg-tab-v1', btn.dataset.tab);
+  };
+});
+(function initTab() {
+  const btn = document.querySelector(`.tab-btn[data-tab="${activeTab}"]`) || document.querySelector('.tab-btn');
+  btn.click();
+})();
+
+/* ============ 通用复制 ============ */
+async function copyText(text, btn) {
+  const ok = () => {
+    if (!btn) return;
+    const old = btn.textContent;
+    btn.textContent = '✓ 已复制'; btn.classList.add('ok');
+    setTimeout(() => { btn.textContent = old; btn.classList.remove('ok'); }, 1600);
+  };
+  try {
+    await navigator.clipboard.writeText(text); ok();
+  } catch (e) {
+    const ta = document.createElement('textarea');
+    ta.value = text; document.body.appendChild(ta);
+    ta.select(); document.execCommand('copy'); ta.remove(); ok();
+  }
+}
+
+/* ================================================================
+   文生图（原功能，逻辑不变）
+   ================================================================ */
 let sel = {};            // { groupId: optionLabel 或 [labels] }
 const saved = localStorage.getItem('pg-proto-v1');
 if (saved) { try { sel = JSON.parse(saved); } catch(e) {} }
@@ -412,7 +535,7 @@ function autoRatio(usage) {
   if (!r) return;
   sel.ratio = r;
   // 更新 ratio 组的 chip 状态
-  const groups = document.querySelectorAll('.group');
+  const groups = document.querySelectorAll('#tab-t2i .group');
   const ratioCard = [...groups].find(c => c.querySelector('h3') && c.querySelector('h3').textContent.includes('画幅比例'));
   if (ratioCard) {
     ratioCard.querySelectorAll('.chip').forEach(c => c.classList.toggle('on', c.textContent === r));
@@ -426,12 +549,11 @@ document.querySelectorAll('.preset-btn[data-preset]').forEach(btn => {
     const p = PRESETS[btn.dataset.preset];
     sel = JSON.parse(JSON.stringify(p.sel));
     save(); location.reload();
-    setTimeout(() => { try { localStorage.setItem('pg-last-preset', p.label); } catch(e){} }, 0);
   };
 });
 document.getElementById('resetBtn').onclick = () => { sel = {}; save(); location.reload(); };
 
-/* ============ 提示词组装 + 模拟 Agent ============ */
+/* ============ 提示词组装 + 模拟 Agent（文生图） ============ */
 const themeEl = document.getElementById('theme');
 const genBtn = document.getElementById('genBtn');
 const stepsEl = document.getElementById('steps');
@@ -529,7 +651,7 @@ genBtn.onclick = async () => {
   resultText.textContent = prompt;
   ratioBadge.textContent = ratio ? `建议画幅：${ratio}` : '';
   notesEl.innerHTML =
-    warns.map(w => `<div class="note-item note-warn">⚠ ${w}</div>`).join('') +
+    warns.map(w => `<div class="note-item note-warn">${w}</div>`).join('') +
     notes.map(n => `<div class="note-item">${n}</div>`).join('');
   resultWrap.style.display = 'block';
   stepsEl.style.display = 'none';
@@ -537,19 +659,327 @@ genBtn.onclick = async () => {
   resultWrap.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 };
 
-copyBtn.onclick = async () => {
-  try {
-    await navigator.clipboard.writeText(resultText.textContent);
-    copyBtn.textContent = '✓ 已复制'; copyBtn.classList.add('ok');
-    setTimeout(() => { copyBtn.textContent = '复制'; copyBtn.classList.remove('ok'); }, 1600);
-  } catch (e) {
-    const ta = document.createElement('textarea');
-    ta.value = resultText.textContent; document.body.appendChild(ta);
-    ta.select(); document.execCommand('copy'); ta.remove();
-    copyBtn.textContent = '✓ 已复制';
-    setTimeout(() => { copyBtn.textContent = '复制'; }, 1600);
-  }
+copyBtn.onclick = () => copyText(resultText.textContent, copyBtn);
+
+/* ================================================================
+   图生图（新增）
+   ================================================================ */
+const I2I_SCENES = [
+  { id: 'creative', label: '💡 创意灵感', desc: '基于现有图片发散创意，输出一组 3 条提示词' },
+  { id: 'modify',   label: '🔧 精准修改', desc: '描述图片 + 想怎么改，输出 1 条修改提示词' },
+  { id: 'style',    label: '🎨 风格转换', desc: '内容构图不变，整体换成目标视觉风格' },
+];
+
+const I2I_DIRS = [
+  ['系列延展', '同风格多图成套，适合连载封面'],
+  ['换风格演绎', '同一内容换一种画风'],
+  ['场景延伸', '主体不变，场景向外发散'],
+  ['自由脑洞', '混合发散，交给 Agent 想象（默认）'],
+];
+
+const I2I_TPLS = [
+  { id: 'upscale',   name: '图片放大', use: '小图变大图、更清晰',
+    text: '将图片高清放大，提升分辨率与细节锐度，修复噪点与模糊，画面更清晰通透，保持原有构图与内容完全不变' },
+  { id: 'portrait',  name: '人像精修', use: '人物出镜图优化',
+    text: '对人像进行精修：皮肤磨皮自然、去除瑕疵与黑眼圈、提亮眼神光，保留真实皮肤质感与五官特征，不改变相貌与构图，整体光影更柔和高级' },
+  { id: 'background',name: '背景替换', use: '主体不变换环境',
+    text: '将背景替换为：（请补充目标背景，如：简洁的纯色影棚背景），主体边缘自然融合，光影方向、透视与景深和原图保持一致' },
+  { id: 'cleanup',   name: '去除杂物', use: '移除路人/杂物/水印',
+    text: '移除画面中的干扰元素（路人、杂物、水印文字），被移除区域由背景自然延展补全，不破坏原图构图与氛围' },
+  { id: 'weather',   name: '换天气/季节', use: '调整画面氛围',
+    text: '将画面的天气/时间/季节改为：（请补充，如：黄昏/雪天/秋日），整体色调与光线同步调整，主体与构图保持不变' },
+  { id: 'restore',   name: '老照片修复', use: '修复划痕褪色',
+    text: '修复这张老照片：去除划痕、污渍与折痕，还原褪色的色彩，提升清晰度，保留原有的年代质感与人物特征' },
+  { id: 'outpaint',  name: '扩图适配画幅', use: '横图变 2.35:1 首图等',
+    text: '以原图为中心向外延展画面，适配目标画幅，延展部分与原图的风格、光线、色调、质感无缝衔接，看不出拼接痕迹' },
+];
+
+let i2i = { scene: 'modify', desc: '', dir: '', style: '', modify: '', tpl: '', ratio: '' };
+const i2iSaved = localStorage.getItem('pg-i2i-v1');
+if (i2iSaved) { try { i2i = Object.assign(i2i, JSON.parse(i2iSaved)); } catch(e) {} }
+function i2iSave() { localStorage.setItem('pg-i2i-v1', JSON.stringify(i2i)); }
+
+const i2iSceneChips = document.getElementById('i2iSceneChips');
+const i2iSceneState = document.getElementById('i2i-scene-state');
+const i2iDescEl = document.getElementById('i2iDesc');
+const i2iDescErr = document.getElementById('i2iDescErr');
+const i2iExtraEl = document.getElementById('i2iExtra');
+const i2iGenBtn = document.getElementById('i2iGenBtn');
+const i2iStepsEl = document.getElementById('i2iSteps');
+const i2iResultWrap = document.getElementById('i2iResultWrap');
+const i2iResultTitle = document.getElementById('i2iResultTitle');
+const i2iResultCards = document.getElementById('i2iResultCards');
+const i2iNotesEl = document.getElementById('i2iNotes');
+
+I2I_SCENES.forEach(s => {
+  const chip = document.createElement('span');
+  chip.className = 'chip' + (i2i.scene === s.id ? ' on' : '');
+  chip.textContent = s.label;
+  chip.dataset.scene = s.id;
+  chip.onclick = () => {
+    i2i.scene = s.id; i2iSave();
+    i2iSceneChips.querySelectorAll('.chip').forEach(c => c.classList.toggle('on', c === chip));
+    renderI2iExtra();
+  };
+  i2iSceneChips.appendChild(chip);
+});
+
+i2iDescEl.value = i2i.desc;
+i2iDescEl.oninput = () => {
+  i2i.desc = i2iDescEl.value; i2iSave();
+  i2iDescEl.classList.remove('err'); i2iDescErr.classList.remove('show');
 };
+
+function updateI2iStates() {
+  const s = I2I_SCENES.find(x => x.id === i2i.scene);
+  i2iSceneState.textContent = s ? s.label.replace(/^\S+\s/, '') : '';
+  i2iSceneState.classList.toggle('on', true);
+  const d = i2i.desc.trim();
+  const descState = document.getElementById('i2i-desc-state');
+  descState.textContent = d ? `已填 ${d.length} 字` : '未填写';
+  descState.classList.toggle('on', !!d);
+}
+
+/* ---- 按场景渲染动态区 ---- */
+function renderI2iExtra() {
+  i2iExtraEl.innerHTML = '';
+  if (i2i.scene === 'creative') {
+    i2iExtraEl.innerHTML = `<h3>🧩 创意方向 <span class="state" id="i2i-dir-state"></span></h3>
+      <div class="hint">可不选，默认「自由脑洞」混合发散</div>`;
+    const chips = document.createElement('div');
+    chips.className = 'chips';
+    I2I_DIRS.forEach(([label, tip]) => {
+      const chip = document.createElement('span');
+      chip.className = 'chip' + (i2i.dir === label ? ' on' : '');
+      chip.textContent = label; chip.title = tip;
+      chip.onclick = () => {
+        i2i.dir = i2i.dir === label ? '' : label; i2iSave();
+        chips.querySelectorAll('.chip').forEach(c => c.classList.toggle('on', c.textContent === i2i.dir));
+        updateDirState();
+      };
+      chips.appendChild(chip);
+    });
+    i2iExtraEl.appendChild(chips);
+  }
+
+  if (i2i.scene === 'modify') {
+    i2iExtraEl.innerHTML = `<h3>🛠 常用修改模板 <span class="state" id="i2i-tpl-state"></span></h3>
+      <div class="hint">点模板一键填充修改意向，可再手动编辑</div>`;
+    const grid = document.createElement('div');
+    grid.className = 'tpl-grid';
+    I2I_TPLS.forEach(t => {
+      const btn = document.createElement('button');
+      btn.className = 'tpl-btn' + (i2i.tpl === t.id ? ' on' : '');
+      btn.innerHTML = `${t.name}<span class="t-use">${t.use}</span>`;
+      btn.onclick = () => {
+        if (i2i.tpl === t.id) {          // 再点取消
+          i2i.tpl = ''; i2iSave();
+          btn.classList.remove('on'); updateTplState();
+          return;
+        }
+        i2i.tpl = t.id; i2i.modify = t.text; i2iSave();
+        grid.querySelectorAll('.tpl-btn').forEach(b => b.classList.toggle('on', b === btn));
+        modifyTa.value = t.text;
+        updateTplState(); updateModState();
+        if (t.id === 'outpaint') renderRatioRow();
+        else { const rr = document.getElementById('i2iRatioRow'); if (rr) rr.remove(); }
+      };
+      grid.appendChild(btn);
+    });
+    i2iExtraEl.appendChild(grid);
+
+    i2iExtraEl.insertAdjacentHTML('beforeend', `<h3 style="margin-top:4px">✍️ 修改意向 <span class="state" id="i2i-mod-state"></span></h3>
+      <div class="hint">想怎么改？描述越具体，提示词越精准</div>`);
+    const modifyTa = document.createElement('textarea');
+    modifyTa.className = 'theme-ta'; modifyTa.style.minHeight = '72px';
+    modifyTa.value = i2i.modify;
+    modifyTa.placeholder = '例如：把背景换成黄昏的海边，主体保持不变';
+    modifyTa.oninput = () => { i2i.modify = modifyTa.value; i2iSave(); updateModState(); };
+    i2iExtraEl.appendChild(modifyTa);
+    i2iExtraEl._modifyTa = modifyTa;
+
+    // 扩图模板 → 画幅联动
+    if (i2i.tpl === 'outpaint') renderRatioRow();
+  }
+
+  if (i2i.scene === 'style') {
+    i2iExtraEl.innerHTML = `<h3>🎨 目标风格 <span class="state" id="i2i-style-state"></span></h3>
+      <div class="hint">与文生图共用风格库；不选则由 Agent 依原图判断最合适的风格</div>`;
+    const chips = document.createElement('div');
+    chips.className = 'chips';
+    DATA.style.options.forEach(([label, tip]) => {
+      const chip = document.createElement('span');
+      chip.className = 'chip' + (i2i.style === label ? ' on' : '');
+      chip.textContent = label; chip.title = tip;
+      chip.onclick = () => {
+        i2i.style = i2i.style === label ? '' : label; i2iSave();
+        chips.querySelectorAll('.chip').forEach(c => c.classList.toggle('on', c.textContent === i2i.style));
+        updateStyleState();
+      };
+      chips.appendChild(chip);
+    });
+    i2iExtraEl.appendChild(chips);
+  }
+  updateI2iStates(); updateDirState(); updateTplState(); updateModState(); updateStyleState();
+}
+
+function renderRatioRow() {
+  if (document.getElementById('i2iRatioRow')) return;
+  const row = document.createElement('div');
+  row.id = 'i2iRatioRow';
+  row.style.marginTop = '12px';
+  row.innerHTML = `<div style="font-size:12px;font-weight:600;margin-bottom:6px">目标画幅 <span style="font-weight:400;color:var(--text-2)">（扩图需指定，默认按公众号首图 2.35:1）</span></div>`;
+  const chips = document.createElement('div');
+  chips.className = 'chips';
+  DATA.ratio.options.forEach(([label]) => {
+    const chip = document.createElement('span');
+    chip.className = 'chip' + (i2i.ratio === label ? ' on' : '');
+    chip.textContent = label;
+    chip.onclick = () => { i2i.ratio = i2i.ratio === label ? '' : label; i2iSave();
+      chips.querySelectorAll('.chip').forEach(c => c.classList.toggle('on', c.textContent === i2i.ratio)); };
+    chips.appendChild(chip);
+  });
+  row.appendChild(chips);
+  i2iExtraEl.appendChild(row);
+}
+
+const stateTxt = (id, val, unset) => {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = val || unset; el.classList.toggle('on', !!val);
+};
+function updateDirState()   { stateTxt('i2i-dir-state', i2i.dir, '自由脑洞'); }
+function updateTplState()   {
+  const t = I2I_TPLS.find(x => x.id === i2i.tpl);
+  stateTxt('i2i-tpl-state', t ? t.name : '', '未使用');
+}
+function updateModState()   { stateTxt('i2i-mod-state', i2i.modify.trim() ? '已填' : '', '未填写'); }
+function updateStyleState() { stateTxt('i2i-style-state', i2i.style, 'Agent 自判'); }
+
+/* ---- 模拟生成 ---- */
+function buildI2i() {
+  const desc = i2i.desc.trim();
+  const notes = [], warns = [];
+
+  // 扩图与画幅
+  let ratio = i2i.ratio;
+  if (i2i.scene === 'modify' && i2i.tpl === 'outpaint') {
+    if (!ratio) { ratio = '2.35:1'; notes.push(`未选择目标画幅，已按公众号首图默认 2.35:1 处理`); }
+    else notes.push(`扩图目标画幅 ${ratio} 已写入提示词`);
+  }
+
+  let prompt = '';
+  if (i2i.scene === 'creative') {
+    const base = `参考原图内容：${desc}`;
+    if (i2i.dir && i2i.dir !== '自由脑洞') {
+      const dirMap = {
+        '系列延展': `在「${i2i.dir}」方向上给出 3 条递进变体：同款主体、同款色调光线，景别与构图逐张变化，成套使用`,
+        '换风格演绎': `在「${i2i.dir}」方向上给出 3 条不同画风的演绎版本，主体与场景关系保持一致`,
+        '场景延伸': `在「${i2i.dir}」方向上给出 3 条场景延展方案，主体不变，环境逐步向更大范围展开`,
+      };
+      prompt = `${base}。延展要求：${dirMap[i2i.dir]}。每条需可直接作为独立提示词使用，超高细节，画质精致。`;
+    } else {
+      prompt = `${base}。请从三个方向各出一条创意提示词：① 系列延展——同风格多图成套；② 换风格演绎——同一内容换一种画风；③ 场景延伸——主体不变、场景向外发散。每条需可直接作为独立提示词使用，超高细节，画质精致。`;
+      notes.push('未指定创意方向，已按「自由脑洞」给出三个方向各一条');
+    }
+  }
+
+  if (i2i.scene === 'modify') {
+    const modify = i2i.modify.trim();
+    if (!modify) {
+      warns.push('修改意向为空：已生成通用的画质增强提示词，补充具体修改意向可获得更精准结果');
+      prompt = `参考原图：${desc}。在保持原图主体、构图与风格完全不变的前提下，提升整体画质：增强清晰度与细节，优化光影层次，画面更通透。避免出现：修改痕迹明显、构图偏移。`;
+    } else {
+      prompt = `参考原图：${desc}。修改要求：${modify}。保持原图的主体、构图与整体风格不变，仅执行上述修改，修改区域与原图光影、透视、色调自然融合，过渡无痕，画质保持高清。避免出现：修改痕迹明显、边缘锯齿、构图偏移。`;
+      if (ratio) prompt += ` 画幅比例 ${ratio}。`;
+    }
+    // 冲突检查
+    const hasPerson = /(人像|人物|肖像|头像|自拍|模特|女孩|男孩|女人|男人|女士|先生|老人|小孩|儿童|婴儿|帅哥|美女|脸|他|她|我)/.test(desc);
+    const t = I2I_TPLS.find(x => x.id === i2i.tpl);
+    if (t && t.id === 'portrait' && !hasPerson) {
+      warns.push('图片描述中未提到人物，「人像精修」可能无人像可修，请确认原图内容');
+    }
+    if (t && t.id === 'restore' && /(科技|城市夜景|数码)/.test(desc)) {
+      warns.push('图片描述看起来不是老照片场景，请确认是否需要「老照片修复」');
+    }
+  }
+
+  if (i2i.scene === 'style') {
+    const style = i2i.style || '（由 Agent 依原图内容推荐的最合适风格）';
+    if (!i2i.style) notes.push('未指定目标风格，真实 Agent 将分析原图后自动推荐');
+    prompt = `参考原图：${desc}。将整幅画面转换为「${style}」风格：保留原图的构图、主体与空间关系，色彩、笔触与质感整体按目标风格重新呈现，转换后画面完整、细节丰富、风格统一。超高细节，画质精致。`;
+  }
+
+  return { prompt, notes, warns };
+}
+
+i2iGenBtn.onclick = async () => {
+  if (generating) return;
+  if (!i2i.desc.trim()) {
+    i2iDescEl.classList.add('err'); i2iDescErr.classList.add('show');
+    i2iDescEl.focus();
+    return;
+  }
+  generating = true; i2iGenBtn.disabled = true;
+  i2iResultWrap.style.display = 'none';
+  i2iStepsEl.style.display = 'block';
+  const items = i2iStepsEl.querySelectorAll('li');
+  items.forEach(li => li.className = '');
+
+  for (let i = 0; i < items.length; i++) {
+    items[i].className = 'active';
+    await sleep(i === 2 ? 650 : 480);
+    items[i].className = 'done';
+  }
+
+  const { prompt, notes, warns } = buildI2i();
+  i2iResultCards.innerHTML = '';
+  i2iResultTitle.textContent = i2i.scene === 'creative' ? '创意提示词（3 条）' : '图生图提示词';
+
+  const mkCard = (label, sub, text) => {
+    const card = document.createElement('div');
+    card.className = 'result-card';
+    const lab = document.createElement('div');
+    lab.className = 'card-label';
+    lab.innerHTML = `${label}<span>${sub}</span>`;
+    const ta = document.createElement('div');
+    ta.className = 'result-text'; ta.textContent = text;
+    const row = document.createElement('div');
+    row.className = 'copy-row';
+    const btn = document.createElement('button');
+    btn.className = 'copy-btn'; btn.textContent = '复制';
+    btn.onclick = () => copyText(text, btn);
+    row.appendChild(btn);
+    card.append(lab, ta, row);
+    i2iResultCards.appendChild(card);
+  };
+
+  if (i2i.scene === 'creative') {
+    if (i2i.dir && i2i.dir !== '自由脑洞') {
+      mkCard('变体 1', i2i.dir + ' · 递进一', prompt.split('。每条需')[0] + `。变体一：景别推进至近景，强调主体细节。超高细节，画质精致。`);
+      mkCard('变体 2', i2i.dir + ' · 递进二', prompt.split('。每条需')[0] + `。变体二：景别推进至中景，主体与环境并重。超高细节，画质精致。`);
+      mkCard('变体 3', i2i.dir + ' · 递进三', prompt.split('。每条需')[0] + `。变体三：景别推进至全景，展现完整场景氛围。超高细节，画质精致。`);
+    } else {
+      mkCard('方向一', '系列延展 · 同风格成套', `参考原图内容：${i2i.desc.trim()}。以同风格延展一组系列配图：保持主体形象、色调与光线一致，景别依次切换（近景→中景→全景），构图预留标题位，形成成套连载的系列感。超高细节，画质精致。`);
+      mkCard('方向二', '换风格演绎 · 换一种画风', `参考原图内容：${i2i.desc.trim()}。将同一内容以「手绘水彩」风格重新演绎：保留原图主体与场景关系，笔触、色彩与质感替换为水彩语言，颜料晕染通透自然。超高细节，画质精致。`);
+      mkCard('方向三', '场景延伸 · 场景向外发散', `参考原图内容：${i2i.desc.trim()}。延续原图主体，将场景向画面边界外延展：补充合理的环境细节，主体保持在视觉中心，整体氛围连贯统一。超高细节，画质精致。`);
+      notes.push('以上三条为模拟输出，真实 Agent 将按原图描述定制每个方向的内容');
+    }
+  } else {
+    mkCard('提示词', I2I_SCENES.find(s => s.id === i2i.scene).label.replace(/^\S+\s/, ''), prompt);
+  }
+
+  i2iNotesEl.innerHTML =
+    warns.map(w => `<div class="note-item note-warn">${w}</div>`).join('') +
+    notes.map(n => `<div class="note-item">${n}</div>`).join('');
+  i2iResultWrap.style.display = 'block';
+  i2iStepsEl.style.display = 'none';
+  i2iGenBtn.disabled = false; generating = false;
+  i2iResultWrap.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+};
+
+renderI2iExtra();
+updateI2iStates();
 </script>
 </body>
 </html>

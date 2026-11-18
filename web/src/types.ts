@@ -32,6 +32,33 @@ export interface OptionsResponse {
   groups: Record<string, OptionGroup>
   presets: Preset[]
   models: { llm_enabled: boolean; tiers: ModelTier[] }
+  i2i: I2IOptions
+}
+
+/** 图生图配置（PRD v0.2 M8/M9），由 /api/options 下发 */
+export interface I2IOptions {
+  scenes: I2IScene[]
+  dirs: I2IDir[]
+  templates: I2ITemplate[]
+}
+
+export interface I2IScene {
+  id: 'creative' | 'modify' | 'style'
+  label: string
+  desc: string
+  output: 'multi' | 'single'
+}
+
+export interface I2IDir {
+  label: string
+  tip: string
+}
+
+export interface I2ITemplate {
+  id: string
+  name: string
+  use: string
+  text: string
 }
 
 export interface Note {
@@ -88,6 +115,23 @@ export interface ResultEvent {
   parent_id?: string
 }
 
+/** 图生图 SSE result 事件：creative 场景 prompts 为 3 条，其余 1 条 */
+export interface I2IResultEvent {
+  id: string
+  prompts: I2IPromptCard[]
+  prompt: string
+  notes: Note[]
+  warnings: Note[]
+  suggested_ratio: string
+  model: string
+}
+
+export interface I2IPromptCard {
+  direction: string
+  note: string
+  prompt: string
+}
+
 export const NODE_LABELS: Record<string, string> = {
   parse_intent: '解析主题意图',
   enrich_details: '补全画面细节',
@@ -96,6 +140,10 @@ export const NODE_LABELS: Record<string, string> = {
   refine: '润色输出最终结果',
   apply_instruction: '应用修改要求',
   conflict_scan: '冲突扫描',
+  understand_image: '理解原图内容',
+  align_intent: '对齐修改/创意意图',
+  fusion_check: '检查冲突与融合质量',
+  compose: '输出提示词',
 }
 
 export const GENERATE_NODE_ORDER = [
@@ -107,3 +155,5 @@ export const GENERATE_NODE_ORDER = [
 ]
 
 export const REFINE_NODE_ORDER = ['apply_instruction', 'conflict_scan']
+
+export const I2I_NODE_ORDER = ['understand_image', 'align_intent', 'fusion_check', 'compose']

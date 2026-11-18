@@ -1,5 +1,6 @@
 from fastapi import APIRouter
 
+from app.agent.i2i_data import I2I_DIRS, I2I_SCENES, I2I_TEMPLATES
 from app.agent.options_data import GROUPS, PRESETS
 from app.core.config import settings
 
@@ -27,4 +28,5 @@ async def get_options():
         "groups": GROUPS,
         "presets": PRESETS,
         "models": {"llm_enabled": llm_enabled, "tiers": tiers},
+        "i2i": {"scenes": I2I_SCENES, "dirs": I2I_DIRS, "templates": I2I_TEMPLATES},
     }

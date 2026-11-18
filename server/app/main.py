@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.agent.refine import setup_refine, teardown_refine
-from app.api import generations, inspire, options, templates
+from app.api import generations, i2i, inspire, options, templates
 from app.core.config import settings
 from app.db.session import init_db
 
@@ -33,6 +33,7 @@ app.include_router(options.router)
 app.include_router(generations.router)
 app.include_router(templates.router)
 app.include_router(inspire.router)
+app.include_router(i2i.router)
 
 
 @app.get("/api/health")

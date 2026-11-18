@@ -129,3 +129,25 @@ export async function streamRefine(
   })
   await consumeSSE(resp, handlers)
 }
+
+/** 图生图：POST /api/i2i-generations（不传原图，仅图片内容描述） */
+export async function streamI2I(
+  payload: {
+    desc: string
+    scene: string
+    direction?: string
+    style?: string
+    modify?: string
+    ratio?: string
+    template?: string
+    model_tier?: string
+  },
+  handlers: GenerateHandlers,
+): Promise<void> {
+  const resp = await fetch('/api/i2i-generations', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ...payload, model_tier: payload.model_tier ?? 'default' }),
+  })
+  await consumeSSE(resp, handlers)
+}

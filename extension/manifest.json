@@ -1,0 +1,29 @@
+{
+  "manifest_version": 3,
+  "name": "提示词工坊 · 即梦助手",
+  "version": "0.1.0",
+  "description": "在即梦页面内直接选用维度配置并请求本地提示词工坊服务生成提示词，一键复制到即梦输入框。",
+  "permissions": ["storage", "clipboardWrite"],
+  "host_permissions": [
+    "http://localhost:8100/*",
+    "http://127.0.0.1:8100/*"
+  ],
+  "optional_host_permissions": ["http://*/*", "https://*/*"],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "提示词工坊 · 即梦助手"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://jimeng.jianying.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["content.css"],
+      "matches": ["https://jimeng.jianying.com/*"]
+    }
+  ]
+}

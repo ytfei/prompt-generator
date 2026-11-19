@@ -21,10 +21,14 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Prompt Studio API", version="0.1.0", lifespan=lifespan)
 
-# 单用户本地工具：仅放行本地前端 dev 地址，无鉴权
+# 单用户本地工具：仅放行本地前端 dev 地址与 Chrome 插件所在的即梦页面，无鉴权
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "https://jimeng.jianying.com",  # 即梦页面内的插件 content script 直连
+    ],
     allow_methods=["*"],
     allow_headers=["*"],
 )

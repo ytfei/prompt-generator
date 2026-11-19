@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <h1>✨ 提示词工坊</h1>
+
+  <div class="row">
+    <span>服务状态</span>
+    <span class="status"><span class="dot" id="dot"></span><span id="statusText">检测中…</span></span>
+  </div>
+
+  <div class="row">
+    <label for="serverUrl">服务地址</label>
+    <input id="serverUrl" type="text" placeholder="http://localhost:8000" />
+  </div>
+
+  <div class="row">
+    <label for="autoActivate">打开即梦时自动激活助手</label>
+    <input id="autoActivate" type="checkbox" />
+  </div>
+
+  <button id="save" class="btn primary">保存设置</button>
+  <button id="togglePanel" class="btn">在此页唤起 / 收起助手</button>
+  <button id="openWorkbench" class="btn ghost">打开完整工作台</button>
+
+  <p class="tip" id="tip"></p>
+
+  <script src="popup.js"></script>
+</body>
+</html>
